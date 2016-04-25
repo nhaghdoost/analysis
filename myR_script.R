@@ -1,4 +1,3 @@
-# This is a change
 
 ## Pakages we need for our project
 library(mvabund)
