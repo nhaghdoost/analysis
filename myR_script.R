@@ -13,11 +13,20 @@ my.metadata=read.csv(file = "metadata.csv",header = T, sep = ",",row.names = 1)
 time=factor(my.metadata$time) 
 locality=factor(my.metadata$locality)
 source= my.metadata$source <- factor(my.metadata$source, levels = c("Leaf", "Branch", "Dust"))
-dust=factor(my.metadata$dust)
+dust=(my.metadata$dust)
 
 # Isolation success
 Success=apply(fungal.abundance,1,sum)
 
+# Keep only samples with observations
+FungalObs = fungal.abundance[Success,]
+
+# Data sizes
+dim(FungalObs)
+dim(fungal.abundance)
+
+# Check if no observation samples were really removed:
+summary(apply(FungalObs,1,sum))
 
 # HILL Diversities and Shannon diversity index
 Specieshill=renyi(fungal.abundance,scales=c(0,1,2),hill=T)
@@ -25,6 +34,10 @@ myhill.1=Specieshill$"0"
 myhill.2=Specieshill$"1"
 myhill.3=Specieshill$"2"
 shannon= diversity(fungal.abundance,index = "shannon",MARGIN = 1,base = exp(1))
+
+hist(myhill.1)
+hist(myhill.2)
+hist(myhill.3)
 
 #First hill 
 myhill.1.m1d=lm(myhill.1~dust)
@@ -34,7 +47,10 @@ myhill.1.m3=lm(myhill.1~time+locality+source)
 myhill.1.m4=lm(myhill.1~time+locality+source+dust)
 myhill.1.m5=lm(myhill.1~locality+time+source*dust)
 
-anova.hill.1=anova(myhill.1.m1d,myhill.1.m1,myhill.1.m2,myhill.1.m3,myhill.1.m4,myhill.1.m5)
+anova.hill.1=anova(myhill.1.m1,myhill.1.m2,myhill.1.m3,myhill.1.m4,myhill.1.m5)
+summary(myhill.1.m4)
+anova(myhill.1.m4,test="Chisq")
+
 #model m2 is better?
 summary(myhill.1.m2)
 
@@ -46,9 +62,9 @@ myhill.2.m3=lm(myhill.2~time+locality+source)
 myhill.2.m4=lm(myhill.2~time+locality+source+dust)
 myhill.2.m5=lm(myhill.2~locality+time+source*dust)
 
-anova.hill.2=anova(myhill.2.m1d,myhill.2.m1,myhill.2.m2,myhill.2.m3,myhill.2.m4,myhill.2.m5)
-summary(myhill.2.m2)
-
+anova.hill.2=anova(myhill.2.m1,myhill.2.m2,myhill.2.m3,myhill.2.m4,myhill.2.m5)
+summary(myhill.2.m4)
+anova(myhill.2.m4,test="Chisq")
 #Third hill
 # an error is accuring in this part...What is it?
 myhill.3.m1d=lm(myhill.3~dust)
