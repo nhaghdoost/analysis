@@ -10,79 +10,188 @@ fungal.abundance= read.csv(file = "morphotype_matrix_incubator.csv", header = T,
 my.metadata=read.csv(file = "metadata.csv",header = T, sep = ",",row.names = 1)
 
 # factors
-time=factor(my.metadata$time) 
-locality=factor(my.metadata$locality)
-source= my.metadata$source <- factor(my.metadata$source, levels = c("Leaf", "Branch", "Dust"))
-dust=(my.metadata$dust)
+#my.metadata$time=factor(my.metadata$time) 
+#locality=factor(my.metadata$locality)
+#my.metadata$source <- factor(my.metadata$source, levels = c("Leaf", "Branch", "Dust"))
+#dust=(my.metadata$dust)
 
-# Isolation success
-Success=apply(fungal.abundance,1,sum)
+# Species number model
+species.number = apply(fungal.abundance,1,function(vec) sum(vec>0))
+
+SpecNum.m1=lm(species.number~time+locality+source, data = my.metadata)
+plot(SpecNum.m1) 
+# This is a model diagnostic plot.
+
+SpecNum.m2=glm(species.number~time+locality+source+dust, data = my.metadata, family=poisson(link = "log"))
+plot(SpecNum.m2)
+hist(log(species.number))
+
+# The model diagnstic plots show that the second model has a much better fit - much less trend in the residuals
+
+# Look for the AICs: Akaike Information Criteria and model selection
+AIC(SpecNum.m1)
+summary(SpecNum.m2)
+
+# The Poisson-GLM looks like a reliable one, and it has a much better fit to the data according to AIC. 
+
+# Evaluations
+anova(SpecNum.m2, test="Chisq")
+summary(SpecNum.m2)
+
+
+# What does it mean?
+boxplot(species.number ~ my.metadata$source, xlab="Source", ylab="Richness")
+boxplot(species.number ~ my.metadata$time, xlab="Source", ylab="Richness")
+
+
+# Shannon and Simpson models. We need to remove the zero-samples.
+
+speciesnum0 = species.number > 1
+fungl.abun2=fungal.abundance[speciesnum0,]
+
+MetaObs = my.metadata[speciesnum0,]
+
+
+shannon= diversity(fungl.abun2,index = "shannon")
+simpson=diversity(fungl.abun2,index = "simpson")
+hist(shannon)
+hist(simpson)
+hist(log(shannon))
+hist(log(simpson))
+
+shannon.m1=lm(shannon ~ time + locality +source+ dust, data=MetaObs)
+plot(shannon.m1)
+
+summary(shannon.m1)
+AIC(shannon.m1)
+anova(shannon.m1, test="Chisq")
+
+
+shannon.m2=glm(shannon~time+locality+source+dust, data=MetaObs, family=Gamma(link="log"))
+plot(shannon.m2)
+
+summary(shannon.m2) 
+anova(shannon.m2, test = "Chisq")
+
+shannon.m3=glm(shannon~time+locality+source*dust, data=MetaObs, family=Gamma(link="log"))
+plot(shannon.m3)
+
+AIC(shannon.m1)
+AIC(shannon.m2)
+AIC(shannon.m3)
+
+summary(shannon.m3) 
+anova(shannon.m3, test = "Chisq")
+
+# Plot effects
+plot(MetaObs$dust, shannon)
+boxplot(shannon ~ MetaObs$source)
+
+
+
+simpson.m1=lm(simpson ~ time + locality +source+ dust, data=MetaObs)
+plot(simpson.m1)
+
+summary(simpson.m1)
+anova(simpson.m1, test= "Chisq")
+
+
+
+simpson.m2=glm(simpson~time+locality+source+dust, data=MetaObs,family=poisson(link = "log"))
+plot(simpson.m2)
+
+summary(simpson.m2)
+anova(simpson.m2, test= "Chisq")
+
+AIC(simpson.m1)
+AIC(simpson.m2)
+
+# Success=apply(fungal.abundance,1,sum)
+# IsSuccess = Success > 1
 
 # Keep only samples with observations
-FungalObs = fungal.abundance[Success,]
+FungalObs = fungal.abundance[IsRich,]
+
+# Filter out the zero samples also from the metadata
+MetaObs = my.metadata[IsRich,]
 
 # Data sizes
 dim(FungalObs)
-dim(fungal.abundance)
+dim(MetaObs)
 
 # Check if no observation samples were really removed:
 summary(apply(FungalObs,1,sum))
 
 # HILL Diversities and Shannon diversity index
-Specieshill=renyi(fungal.abundance,scales=c(0,1,2),hill=T)
+Specieshill=renyi(FungalObs,scales=c(0,1,2),hill=T)
 myhill.1=Specieshill$"0"
 myhill.2=Specieshill$"1"
 myhill.3=Specieshill$"2"
-shannon= diversity(fungal.abundance,index = "shannon",MARGIN = 1,base = exp(1))
+# shannon= diversity(fungal.abundance,index = "shannon",MARGIN = 1,base = exp(1))
 
-hist(myhill.1)
-hist(myhill.2)
-hist(myhill.3)
+# Just an other command for species richness:
+summary(specnumber(fungal.abundance))
+
+# Frequency of the Hills
+hist(log(myhill.1))
+hist(log(myhill.2))
+hist(log(myhill.3))
 
 #First hill 
-myhill.1.m1d=lm(myhill.1~dust)
-myhill.1.m1=lm(myhill.1~source)
-myhill.1.m2=lm(myhill.1~time+source)
-myhill.1.m3=lm(myhill.1~time+locality+source)
-myhill.1.m4=lm(myhill.1~time+locality+source+dust)
-myhill.1.m5=lm(myhill.1~locality+time+source*dust)
+# myhill.1.m1d=lm(myhill.1~dust)
+# myhill.1.m1=lm(myhill.1~source, data = MetaObs)
+# myhill.1.m2=lm(myhill.1~time+source, data = MetaObs)
+# myhill.1.m3=lm(myhill.1~time+locality+source, data = MetaObs)
+myhill.1.m4=lm(log(myhill.1)~time+locality+source+dust, data = MetaObs)
+# myhill.1.m5=lm(myhill.1~locality+time+source*dust)
 
-anova.hill.1=anova(myhill.1.m1,myhill.1.m2,myhill.1.m3,myhill.1.m4,myhill.1.m5)
+# anova.hill.1=anova(myhill.1.m1,myhill.1.m2,myhill.1.m3,myhill.1.m4,myhill.1.m5)
+
+# Summarz statistics
 summary(myhill.1.m4)
+
+# For ANOVA the order of predictors is important. Write down in Methods why you choose this!
 anova(myhill.1.m4,test="Chisq")
 
-#model m2 is better?
-summary(myhill.1.m2)
+# #model m2 is better?
+# summary(myhill.1.m2)
 
-#Second Hill
-myhill.2.m1d=lm(myhill.2~dust)
-myhill.2.m1=lm(myhill.2~source)
-myhill.2.m2=lm(myhill.2~time+source)
-myhill.2.m3=lm(myhill.2~time+locality+source)
-myhill.2.m4=lm(myhill.2~time+locality+source+dust)
-myhill.2.m5=lm(myhill.2~locality+time+source*dust)
+# #Second Hill
+# myhill.2.m1d=lm(myhill.2~dust)
+# myhill.2.m1=lm(myhill.2~source)
+# myhill.2.m2=lm(myhill.2~time+source)
+# myhill.2.m3=lm(myhill.2~time+locality+source)
+myhill.2.m4=lm(log(myhill.2)~time+locality+source+dust, data = MetaObs)
+# myhill.2.m5=lm(myhill.2~locality+time+source*dust)
 
-anova.hill.2=anova(myhill.2.m1,myhill.2.m2,myhill.2.m3,myhill.2.m4,myhill.2.m5)
+# anova.hill.2=anova(myhill.2.m1,myhill.2.m2,myhill.2.m3,myhill.2.m4,myhill.2.m5)
 summary(myhill.2.m4)
+
+# Very similar as Hill 1
 anova(myhill.2.m4,test="Chisq")
+
+
 #Third hill
-# an error is accuring in this part...What is it?
-myhill.3.m1d=lm(myhill.3~dust)
-myhill.3.m1=lm(myhill.3~source)
-myhill.3.m2=lm(myhill.3~time+source)
-myhill.3.m3=lm(myhill.3~time+locality+source)
-myhill.3.m4=lm(myhill.3~time+locality+source+dust)
-myhill.3.m5=lm(myhill.3~locality+time+source*dust)
+# # an error is accuring in this part...What is it?
+# myhill.3.m1d=lm(myhill.3~dust)
+# myhill.3.m1=lm(myhill.3~source)
+# myhill.3.m2=lm(myhill.3~time+source)
+# myhill.3.m3=lm(myhill.3~time+locality+source)
+myhill.3.m4=lm(log(myhill.3)~time+locality+source+dust, data = MetaObs)
+# myhill.3.m5=lm(myhill.3~locality+time+source*dust)
 
-##Shannon diversity
-myshannon.m1d=lm(shannon~dust)
-myshannon.m1=lm(shannon~source)
-myshannon.m2=lm(shannon~time+source)
-myshannon.m3=lm(shannon~time+locality+source)
-myshannon.m4=lm(shannon~time+locality+source+dust)
-myshannon.m5=lm(shannon~locality+time+source*dust)
+summary(myhill.2.m4)
+anova(myhill.3.m4,test="Chisq")
 
-Anova.shannon=anova(myshannon.m1d,myshannon.m1,myshannon.m2,myshannon.m3,myshannon.m4,myshannon.m5)
+# ##Shannon diversity
+# myshannon.m1d=lm(shannon~dust)
+# myshannon.m1=lm(shannon~source)
+# myshannon.m2=lm(shannon~time+source)
+# myshannon.m3=lm(shannon~time+locality+source)
+# myshannon.m4=lm(shannon~time+locality+source+dust)
+# myshannon.m5=lm(shannon~locality+time+source*dust)
+
+# Anova.shannon=anova(myshannon.m1d,myshannon.m1,myshannon.m2,myshannon.m3,myshannon.m4,myshannon.m5)
 
 
 ## Show the partial residuals of Hill's numbers 
