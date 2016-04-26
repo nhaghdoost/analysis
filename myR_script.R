@@ -12,43 +12,52 @@ my.metadata=read.csv(file = "metadata.csv",header = T, sep = ",",row.names = 1)
 # factors
 #my.metadata$time=factor(my.metadata$time) 
 #locality=factor(my.metadata$locality)
-#my.metadata$source <- factor(my.metadata$source, levels = c("Leaf", "Branch", "Dust"))
+my.metadata$source <- factor(my.metadata$source, levels = c("Leaf", "Branch", "Dust"))
 #dust=(my.metadata$dust)
 
-# Species number model
-species.number = apply(fungal.abundance,1,function(vec) sum(vec>0))
+# Richness (Species number) model --  the zero samples were included in richness analysis
+Richness = apply(fungal.abundance,1,function(vec) sum(vec>0))
+hist(log(Richness))
 
-SpecNum.m1=lm(species.number~time+locality+source, data = my.metadata)
-plot(SpecNum.m1) 
+Richness.m1=lm(Richness~time+locality+source*dust, data = my.metadata)
+plot(Richness.m1) 
 # This is a model diagnostic plot.
+summary(Richness.m1)
 
-SpecNum.m2=glm(species.number~time+locality+source+dust, data = my.metadata, family=poisson(link = "log"))
-plot(SpecNum.m2)
-hist(log(species.number))
+Richness.m2=glm(Richness~time+locality+source+dust, data = my.metadata, family=poisson(link = "log"))
+plot(Richness.m2)
+summary(Richness.m2)
 
-# The model diagnstic plots show that the second model has a much better fit - much less trend in the residuals
+Richness.m3= glm(Richness~locality+ time +source*dust, data = my.metadata, family=poisson(link = "log"))
+par(mfrow=c(2,2))
+plot(Richness.m3)
+summary(Richness.m3)
+#when I moved the locality to the first the effect of time is less significant but the numbers are the same.
+# The model diagnstic plots show that the third model has a much better fit - much less trend in the residuals
 
 # Look for the AICs: Akaike Information Criteria and model selection
-AIC(SpecNum.m1)
-summary(SpecNum.m2)
-
-# The Poisson-GLM looks like a reliable one, and it has a much better fit to the data according to AIC. 
+AIC(Richness.m1)
+AIC(Richness.m2)
+AIC(Richness.m3)
+# The Poisson-GLM with the source*dust interactions looks like a reliable one, and it has a much better fit to the data according to AIC. 
 
 # Evaluations
-anova(SpecNum.m2, test="Chisq")
-summary(SpecNum.m2)
-
+anova(Richness.m3, test="Chisq")
+summary(Richness.m3)
 
 # What does it mean?
-boxplot(species.number ~ my.metadata$source, xlab="Source", ylab="Richness")
-boxplot(species.number ~ my.metadata$time, xlab="Source", ylab="Richness")
+boxplot(Richness ~ my.metadata$source, xlab="Source", ylab="Richness")
+boxplot(Richness ~ my.metadata$time, xlab="Source", ylab="Richness")
 
 
-# Shannon and Simpson models. We need to remove the zero-samples.
 
-speciesnum0 = species.number > 1
+
+#### Shannon and Simpson models. We need to remove the zero-samples.
+
+speciesnum0 = Richness > 1
 fungl.abun2=fungal.abundance[speciesnum0,]
 
+# This removes the samples with one observation
 MetaObs = my.metadata[speciesnum0,]
 
 
@@ -59,7 +68,9 @@ hist(simpson)
 hist(log(shannon))
 hist(log(simpson))
 
-shannon.m1=lm(shannon ~ time + locality +source+ dust, data=MetaObs)
+## Shannon models:
+
+shannon.m1=lm(shannon ~ locality+time +source+dust, data=MetaObs)
 plot(shannon.m1)
 
 summary(shannon.m1)
@@ -73,208 +84,58 @@ plot(shannon.m2)
 summary(shannon.m2) 
 anova(shannon.m2, test = "Chisq")
 
-shannon.m3=glm(shannon~time+locality+source*dust, data=MetaObs, family=Gamma(link="log"))
+shannon.m3=glm(shannon~locality+time+source*dust, data=MetaObs, family=Gamma(link="log"))
+par(mfrow=c(2,2))
 plot(shannon.m3)
 
 AIC(shannon.m1)
 AIC(shannon.m2)
 AIC(shannon.m3)
-
+### I tried changing the order of the factors in the model and it doesn't really change anything. the model m3 is
+###the best model describing our data
 summary(shannon.m3) 
 anova(shannon.m3, test = "Chisq")
 
-# Plot effects
-plot(MetaObs$dust, shannon)
-boxplot(shannon ~ MetaObs$source)
+## Simpson models:
 
-
-
-simpson.m1=lm(simpson ~ time + locality +source+ dust, data=MetaObs)
+simpson.m1=lm(simpson ~ time + locality +source+dust, data=MetaObs)
 plot(simpson.m1)
-
 summary(simpson.m1)
 anova(simpson.m1, test= "Chisq")
 
 
 
-simpson.m2=glm(simpson~time+locality+source+dust, data=MetaObs,family=poisson(link = "log"))
+simpson.m2=glm(simpson~time+locality+source+dust, data=MetaObs,family=Gamma(link = "log"))
 plot(simpson.m2)
-
 summary(simpson.m2)
 anova(simpson.m2, test= "Chisq")
 
+
+simpson.m3=glm(simpson~time+locality+source*dust, data = MetaObs,family = Gamma(link="log"))
+par(mfrow=c(2,2))
+plot(simpson.m3)
+summary(simpson.m3)
+anova(simpson.m3, test= "Chisq")
+
 AIC(simpson.m1)
 AIC(simpson.m2)
+AIC(simpson.m3)
 
-# Success=apply(fungal.abundance,1,sum)
-# IsSuccess = Success > 1
+#### Plot effects
+plot(MetaObs$dust, shannon)
+boxplot(shannon ~ MetaObs$source)
 
-# Keep only samples with observations
-FungalObs = fungal.abundance[IsRich,]
+###Final models:
+### I changed the order of the factors in the model and it did not really change the results and these three
+### models are final
+Richness.m3= glm(Richness~locality+ time +source*dust, data = my.metadata, family=poisson(link = "log"))
+shannon.m3=glm(shannon~locality+time+source*dust, data=MetaObs, family=Gamma(link="log"))
+simpson.m3=glm(simpson~time+locality+source*dust, data = MetaObs,family = Gamma(link="log"))
 
-# Filter out the zero samples also from the metadata
-MetaObs = my.metadata[IsRich,]
+####source*dust interactions plot
+library(effects)
+plot(effect("source:dust",Richness.m3,multiline=TRUE))
 
-# Data sizes
-dim(FungalObs)
-dim(MetaObs)
+plot(effect("source:dust",shannon.m3,multiline=TRUE))
 
-# Check if no observation samples were really removed:
-summary(apply(FungalObs,1,sum))
-
-# HILL Diversities and Shannon diversity index
-Specieshill=renyi(FungalObs,scales=c(0,1,2),hill=T)
-myhill.1=Specieshill$"0"
-myhill.2=Specieshill$"1"
-myhill.3=Specieshill$"2"
-# shannon= diversity(fungal.abundance,index = "shannon",MARGIN = 1,base = exp(1))
-
-# Just an other command for species richness:
-summary(specnumber(fungal.abundance))
-
-# Frequency of the Hills
-hist(log(myhill.1))
-hist(log(myhill.2))
-hist(log(myhill.3))
-
-#First hill 
-# myhill.1.m1d=lm(myhill.1~dust)
-# myhill.1.m1=lm(myhill.1~source, data = MetaObs)
-# myhill.1.m2=lm(myhill.1~time+source, data = MetaObs)
-# myhill.1.m3=lm(myhill.1~time+locality+source, data = MetaObs)
-myhill.1.m4=lm(log(myhill.1)~time+locality+source+dust, data = MetaObs)
-# myhill.1.m5=lm(myhill.1~locality+time+source*dust)
-
-# anova.hill.1=anova(myhill.1.m1,myhill.1.m2,myhill.1.m3,myhill.1.m4,myhill.1.m5)
-
-# Summarz statistics
-summary(myhill.1.m4)
-
-# For ANOVA the order of predictors is important. Write down in Methods why you choose this!
-anova(myhill.1.m4,test="Chisq")
-
-# #model m2 is better?
-# summary(myhill.1.m2)
-
-# #Second Hill
-# myhill.2.m1d=lm(myhill.2~dust)
-# myhill.2.m1=lm(myhill.2~source)
-# myhill.2.m2=lm(myhill.2~time+source)
-# myhill.2.m3=lm(myhill.2~time+locality+source)
-myhill.2.m4=lm(log(myhill.2)~time+locality+source+dust, data = MetaObs)
-# myhill.2.m5=lm(myhill.2~locality+time+source*dust)
-
-# anova.hill.2=anova(myhill.2.m1,myhill.2.m2,myhill.2.m3,myhill.2.m4,myhill.2.m5)
-summary(myhill.2.m4)
-
-# Very similar as Hill 1
-anova(myhill.2.m4,test="Chisq")
-
-
-#Third hill
-# # an error is accuring in this part...What is it?
-# myhill.3.m1d=lm(myhill.3~dust)
-# myhill.3.m1=lm(myhill.3~source)
-# myhill.3.m2=lm(myhill.3~time+source)
-# myhill.3.m3=lm(myhill.3~time+locality+source)
-myhill.3.m4=lm(log(myhill.3)~time+locality+source+dust, data = MetaObs)
-# myhill.3.m5=lm(myhill.3~locality+time+source*dust)
-
-summary(myhill.2.m4)
-anova(myhill.3.m4,test="Chisq")
-
-# ##Shannon diversity
-# myshannon.m1d=lm(shannon~dust)
-# myshannon.m1=lm(shannon~source)
-# myshannon.m2=lm(shannon~time+source)
-# myshannon.m3=lm(shannon~time+locality+source)
-# myshannon.m4=lm(shannon~time+locality+source+dust)
-# myshannon.m5=lm(shannon~locality+time+source*dust)
-
-# Anova.shannon=anova(myshannon.m1d,myshannon.m1,myshannon.m2,myshannon.m3,myshannon.m4,myshannon.m5)
-
-
-## Show the partial residuals of Hill's numbers 
-## after accounting for sequence number differences (partial residuals)
-# I need some explanation about this residuals. i am not sure that i am understanding it correctly...
-##### why did you do the following only for model1 of every hill?
-
-png(file="diversities.png", units="mm", height=70, width=90, pointsize=10, bg="white", res=1200)
-par(mfrow=c(1,3))
-par(mar = c(7,2.2,2,0.5))
-
-boxplot(myhill.1.m1$residuals ~ source, boxwex=0.5, notch=T,xlim=c(0.5,3.5), ylab=NA, main="Hill's N0", xaxt="n", 
-        lwd=0.7)
-axis(side=1, at=c(1,2,3), lwd=0,labels=c("leaf", "branch", "dust"), las=2)
-
-boxplot(myhill.2.m1$residuals ~ source, boxwex=0.5, notch=F, xlim=c(0.5,3.5), ylab=NA, main="Hill's N1", xaxt="n",
-        lwd=0.7,col="lightgrey")
-axis(side=1, at=c(1,2,3), lwd=0,labels=c("leaf", "branch", "dust"), las=2)
-
-boxplot(myhill.3.m1$residuals ~ source, boxwex=0.5, notch=T, xlim=c(0.5,3.5), ylab=NA, main="Hill's N2", xaxt="n", 
-        lwd=0.7,col="darkgrey")
-axis(side=1, at=c(1,2,3), lwd=0,labels=c("leaf", "branch", "dust"), las=2)
-
-## Post-hoc Tukey tests among the three experimental treatments with partial residuals, after accounting for 
-## differential sequencing success
-
-## Hill N0
-TukeyHSD(aov(myhill.1.m1$residuals ~ source))
-
-## Hill N1
-TukeyHSD(aov(myhill.2.m1$residuals ~ source))
-
-## Hill N2
-TukeyHSD(aov(myhill.3.m1$residuals ~ source))
-
-##### 3. Define core OTUs
-
-## species abundance
-abundance=apply(fungal.abundance,2,sum)
-
-## The average read number of OTUs
-Meanabundance=apply(fungal.abundance,2,function(vec) mean(vec[vec>0]))
-
-## In how many samples is an OTU present? 
-## I think in this part we should count the samples instead of sum
-sample.present = apply(fungal.abundance,2,function(vec) sum(vec>0))
-
-## The highest read number of an OTU in a sample
-Maxobservation=apply(fungal.abundance,2,max)
-
-## Plotting incidence against abundance
-plot(sample.present, Maxobservation, xlab="Incidence",
-     ylab="Maximum Abundance", pch=20)
-
-plot(sample.present, log(Maxobservation), xlab="Incidence",
-     ylab="log(Maximum Abundance)", pch=20)
-
-## Create a smoothed trendline
-mygam1 = gam(log(Maxobservation)~s(sample.present))
-
-plot(mygam1, residuals=T, shade=T, rug=F, cex=2.6,
-     xlab="Incidence", ylab="logMean Abundance") # , xaxp=c(0,150,15)
-
-## keep core OTUs
-##### Didn't understand this part...
-## how do you know which one is a core OTU? where did this no 30 come from?
-IsFreq = sample.present > 30
-fun.some = fungal.abundance[,IsFreq]
-
-## How many of these in the South, in the North Natural, and North Heated?
-## can I do this for each source and each locality or time?
-some.South = fun.some[experiment == "ControlWarm",]
-length(colnames(some.South)[apply(some.South,2,sum) > 0])
-
-some.NorthNatural = fun.some[experiment == "NotHeated",]
-length(colnames(some.NorthNatural)[apply(some.NorthNatural,2,sum) > 0])
-
-some.NorthHeated = fun.some[experiment == "Heated",]
-length(colnames(some.NorthHeated)[apply(some.NorthHeated,2,sum) > 0])
-
-
-
-
-
-
-
+plot(effect("source:dust",simpson.m3,multiline=TRUE))
