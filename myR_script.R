@@ -50,12 +50,15 @@ boxplot(Richness ~ my.metadata$source, xlab="Source", ylab="Richness")
 boxplot(Richness ~ my.metadata$time, xlab="Source", ylab="Richness")
 
 
-
-
 #### Shannon and Simpson models. We need to remove the zero-samples.
 
 speciesnum0 = Richness > 1
 fungl.abun2=fungal.abundance[speciesnum0,]
+
+abun0=Richness>0
+fun.abun0=fungal.abundance[abun0,]
+Meta0=my.metadata[abun0,]
+row.names(fun.abun0)==row.names(Meta0)
 
 # This removes the samples with one observation
 MetaObs = my.metadata[speciesnum0,]
@@ -67,6 +70,10 @@ hist(shannon)
 hist(simpson)
 hist(log(shannon))
 hist(log(simpson))
+
+## Fisher’s a log-series and evenness is also in my proposal...
+
+
 
 ## Shannon models:
 
@@ -87,14 +94,16 @@ anova(shannon.m2, test = "Chisq")
 shannon.m3=glm(shannon~locality+time+source*dust, data=MetaObs, family=Gamma(link="log"))
 par(mfrow=c(2,2))
 plot(shannon.m3)
+summary(shannon.m3) 
+anova(shannon.m3, test = "Chisq")
+
 
 AIC(shannon.m1)
 AIC(shannon.m2)
 AIC(shannon.m3)
 ### I tried changing the order of the factors in the model and it doesn't really change anything. the model m3 is
 ###the best model describing our data
-summary(shannon.m3) 
-anova(shannon.m3, test = "Chisq")
+
 
 ## Simpson models:
 
@@ -111,7 +120,7 @@ summary(simpson.m2)
 anova(simpson.m2, test= "Chisq")
 
 
-simpson.m3=glm(simpson~time+locality+source*dust, data = MetaObs,family = Gamma(link="log"))
+simpson.m3=glm(simpson~locality+time+source*dust, data = MetaObs,family = Gamma(link="log"))
 par(mfrow=c(2,2))
 plot(simpson.m3)
 summary(simpson.m3)
@@ -120,6 +129,7 @@ anova(simpson.m3, test= "Chisq")
 AIC(simpson.m1)
 AIC(simpson.m2)
 AIC(simpson.m3)
+
 
 #### Plot effects
 plot(MetaObs$dust, shannon)
@@ -139,3 +149,60 @@ plot(effect("source:dust",Richness.m3,multiline=TRUE))
 plot(effect("source:dust",shannon.m3,multiline=TRUE))
 
 plot(effect("source:dust",simpson.m3,multiline=TRUE))
+
+#### Define core species:
+## Summarize reads
+funTotCount = apply(fun.abun0,2,sum)
+
+## The average read number of OTUs
+funMeanCount=apply(fun.abun0,2,function(vec) mean(vec[vec>0]))
+
+## In how many samples is an OTU present?
+funTotPresent = apply(fun.abun0,2,function(vec) sum(vec>0))
+
+## The highest read number of an OTU in a sample
+funMaxCount=apply(fun.abun0,2,max)
+
+## Plotting incidence against abundance
+plot(funTotPresent,funMaxCount, xlab="Incidence",
+     ylab="Maximum Abundance", pch=20)
+
+plot(funTotPresent, log(funMaxCount), xlab="Incidence",
+     ylab="log(Maximum Abundance)", pch=20)
+
+## Create a smoothed trendline
+funGam1 = gam(log(funMaxCount)~s(funTotPresent))
+
+plot(funGam1, residuals=T, shade=T, rug=F, cex=2.6,
+     xlab="Incidence", ylab="logMean Abundance") # , xaxp=c(0,150,15)
+
+## keep core OTUs
+
+funFreq = funTotPresent > 15
+Corfun= fun.abun0[,funFreq]
+length(Corfun)
+Corname = colnames(Corfun)
+
+
+## Core OTUs in leaf, branch and dust?
+## Core OTUs in each locality?
+## Core OTUs in each sampling time?
+
+### 4. Visualize differences in community composition
+## run NMDS
+MDS.all <- metaMDS(Corfun0)
+MDS.all <- metaMDS(Corfun0, previous = MDS.all)
+
+NMDS1=metaMDS(Corfun0,k=2)
+
+### Trying to fix the error!!!
+Corfun0=Corfun[abun0,]
+csum<-colSums(Corfun0)
+any(is.na(csum))
+which(is.na(csum))
+#### aparently I have NA in my data which i have no idea where did it come from!!!
+corfun00=na.omit(Corfun0)
+NMDS2=metaMDS(corfun00,k=2)
+MDS.all <- metaMDS(corfun00)
+MDS.all <- metaMDS(corfun00, previous = MDS.all)
+### it didi not solve the problem!!!
