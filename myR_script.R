@@ -12,7 +12,7 @@ my.metadata=read.csv(file = "metadata.csv",header = T, sep = ",",row.names = 1)
 # factors
 #my.metadata$time=factor(my.metadata$time) 
 #locality=factor(my.metadata$locality)
-my.metadata$source <- factor(my.metadata$source, levels = c("Leaf", "Branch", "Dust"))
+source = factor(my.metadata$source, levels = c("Leaf", "Branch", "Dust"))
 #dust=(my.metadata$dust)
 
 # Richness (Species number) model --  the zero samples were included in richness analysis
@@ -55,10 +55,10 @@ boxplot(Richness ~ my.metadata$time, xlab="Source", ylab="Richness")
 speciesnum0 = Richness > 1
 fungl.abun2=fungal.abundance[speciesnum0,]
 
-abun0=Richness>0
-fun.abun0=fungal.abundance[abun0,]
-Meta0=my.metadata[abun0,]
-row.names(fun.abun0)==row.names(Meta0)
+#abun0=Richness>0
+#fun.abun0=fungal.abundance[abun0,]
+#Meta0=my.metadata[abun0,]
+#row.names(fun.abun0)==row.names(Meta0)
 
 # This removes the samples with one observation
 MetaObs = my.metadata[speciesnum0,]
@@ -71,7 +71,7 @@ hist(simpson)
 hist(log(shannon))
 hist(log(simpson))
 
-## Fisher’s a log-series and evenness is also in my proposal...
+## Fishers a log-series and evenness is also in my proposal...
 
 
 
@@ -179,10 +179,10 @@ plot(funGam1, residuals=T, shade=T, rug=F, cex=2.6,
 ## keep core OTUs
 
 funFreq = funTotPresent > 15
-Corfun= fun.abun0[,funFreq]
+Corfun= fungal.abundance[,funFreq]
 length(Corfun)
 Corname = colnames(Corfun)
-
+corsamplename=row.names(Corfun)
 
 ## Core OTUs in leaf, branch and dust?
 ## Core OTUs in each locality?
@@ -190,19 +190,261 @@ Corname = colnames(Corfun)
 
 ### 4. Visualize differences in community composition
 ## run NMDS
-MDS.all <- metaMDS(Corfun0)
-MDS.all <- metaMDS(Corfun0, previous = MDS.all)
-
-NMDS1=metaMDS(Corfun0,k=2)
+#MDS.all <- metaMDS(Corfun)
+#MDS.all <- metaMDS(Corfun, previous = MDS.all)
+#NMDS1=metaMDS(Corfun,k=2)
 
 ### Trying to fix the error!!!
-Corfun0=Corfun[abun0,]
-csum<-colSums(Corfun0)
-any(is.na(csum))
-which(is.na(csum))
-#### aparently I have NA in my data which i have no idea where did it come from!!!
-corfun00=na.omit(Corfun0)
-NMDS2=metaMDS(corfun00,k=2)
-MDS.all <- metaMDS(corfun00)
-MDS.all <- metaMDS(corfun00, previous = MDS.all)
-### it didi not solve the problem!!!
+#Corfun0=Corfun[abun0,]
+#csum<-colSums(Corfun0)
+#any(is.na(csum))
+#which(is.na(csum))
+
+### try to delete the rows with zero
+rowCount=apply(Corfun, 1,FUN=sum)
+nozero=rowCount>0
+Corfun0=Corfun[nozero,]
+colnames(Corfun0)
+row.names(Corfun0)
+metacor0=my.metadata[nozero,]
+### try to do the NMDS with the new matrix
+
+NMDS1<-metaMDS(Corfun0)
+NMDS1<-metaMDS(Corfun0, previous= NMDS1)
+
+### yes its working :) .
+
+### ploting the NMDS:
+## plot NMDS
+par(mar=c(4,4,1,1))
+plot(NMDS1$points, type="n", ylim=c(-0.9,0.9), xlab="NMDS1", ylab="NMDS2")
+plot(NMDS1)
+
+ordispider(NMDS1, metacor0$source , col="grey")
+points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="black")
+mylegend = legend(-1, 0.95, c("leaf","branch","dust"), 
+                  fill=c("green","orange","gray"), border="white", bty="n")
+with(metacor0,ordiellipse(NMDS1, metacor0$source,cex=.5, 
+                          draw="polygon", col=c("green"),
+                          alpha=100,kind="se",conf=0.95, 
+                          show.groups=(c("Leaf"))))
+with(metacor0,ordiellipse(NMDS1, metacor0$source,cex=.5, 
+                             draw="polygon", col=c("orange"),
+                             alpha=100,kind="se",conf=0.95, 
+                             show.groups=(c("Branch"))))
+with(my.metadata,ordiellipse(NMDS1, metacor0$source,cex=.5, 
+                             draw="polygon", col=c("gray"),
+                             alpha=100,kind="se",conf=0.95, 
+                             show.groups=(c("Dust"))))
+## can I do this NMDS plots for my localities and times?
+
+## Three axes
+NMDS.3 <- metaMDS(Corfun0, k=3, trymax=100)
+NMDS.3 <- metaMDS(Corfun0, previous = NMDS.3, k=3, trymax=100)
+
+
+## colors with experiment
+## did not understand the meaning of this part in your Rscript?
+
+### Axes 1 & 2
+### why did we use shannon???
+png(file="community_NMDS_1-2.jpeg", units="mm", height=60, width=180, 
+    pointsize=10, bg="white", res=1200)
+par(mfrow=c(1,3))
+par(mar=c(4,4,1,1))
+NMDS.1.2 = ordiplot(NMDS.3, choices=c(1,2), type="n", 
+                       xlab="NMDS1", ylab="NMDS2")
+ordispider(NMDS.1.2,metacor0$source, col="grey")
+points(NMDS.3$points[,1], NMDS.3$points[,2], pch=20, 
+       cex=exp(2*shannon)/100,col="gray")
+ordiellipse(NMDS.1.2, metacor0$source,cex=.5, 
+            draw="polygon", col=c("green"),
+            alpha=100,kind="se",conf=0.95, 
+            show.groups=(c("Leaf")), border="green")
+ordiellipse(NMDS.1.2, metacor0$source,cex=.5, 
+            draw="polygon", col=c("orange"),
+            alpha=100,kind="se",conf=0.95,
+            show.groups=(c("Branch")), border="orange")
+ordiellipse(NMDS.1.2, metacor0$source,cex=.5, 
+            draw="polygon", col=c("gray"),
+            alpha=50,kind="se",conf=0.95,
+            show.groups=(c("Dust")), border="black")
+
+### Axes 1 & 3
+
+png(file="community_NMDS_1-3.jpeg", units="mm", height=60, width=180, 
+    pointsize=10, bg="white", res=1200)
+par(mfrow=c(1,3))
+par(mar=c(4,4,1,1))
+NMDS.1.3 = ordiplot(NMDS.3, choices=c(1,3), type="n", 
+                    xlab="NMDS1", ylab="NMDS3")
+ordispider(NMDS.1.3,metacor0$source, col="grey")
+points(NMDS.3$points[,1], NMDS.3$points[,3], pch=20, 
+       cex=exp(2*shannon)/100,col="gray")
+ordiellipse(NMDS.1.3, metacor0$source,cex=.5, 
+            draw="polygon", col=c("green"),
+            alpha=100,kind="se",conf=0.95, 
+            show.groups=(c("Leaf")), border="green")
+ordiellipse(NMDS.1.3, metacor0$source,cex=.5, 
+            draw="polygon", col=c("orange"),
+            alpha=100,kind="se",conf=0.95,
+            show.groups=(c("Branch")), border="orange")
+ordiellipse(NMDS.1.3, metacor0$source,cex=.5, 
+            draw="polygon", col=c("gray"),
+            alpha=50,kind="se",conf=0.95,
+            show.groups=(c("Dust")), border="black")
+
+### Axes 2 & 3
+
+png(file="community_NMDS_2-3.jpeg", units="mm", height=60, width=180, 
+    pointsize=10, bg="white", res=1200)
+par(mfrow=c(1,3))
+par(mar=c(4,4,1,1))
+NMDS.2.3 = ordiplot(NMDS.3, choices=c(2,3), type="n", 
+                    xlab="NMDS2", ylab="NMDS3")
+ordispider(NMDS.2.3,metacor0$source, col="grey")
+points(NMDS.3$points[,2], NMDS.3$points[,3], pch=20, 
+       cex=exp(2*shannon)/100,col="gray")
+ordiellipse(NMDS.2.3, metacor0$source,cex=.5, 
+            draw="polygon", col=c("green"),
+            alpha=100,kind="se",conf=0.95, 
+            show.groups=(c("Leaf")), border="green")
+ordiellipse(NMDS.2.3, metacor0$source,cex=.5, 
+            draw="polygon", col=c("orange"),
+            alpha=100,kind="se",conf=0.95,
+            show.groups=(c("Branch")), border="orange")
+ordiellipse(NMDS.2.3, metacor0$source,cex=.5, 
+            draw="polygon", col=c("gray"),
+            alpha=50,kind="se",conf=0.95,
+            show.groups=(c("Dust")), border="black")
+
+## did not understand this part
+## PCA
+fun.pca = rda(Corfun0)
+fun.pca.scores = scores(fun.pca, choices=c(1,2,3))
+fun.pca.eigenvals = eigenvals(fun.pca)
+
+## explained by the first three axes: 52%
+(fun.pca.eigenvals[1] + fun.pca.eigenvals[2] + fun.pca.eigenvals[3])/sum(fun.pca.eigenvals)
+
+## axis distributions
+fun.pca1 = fun.pca.scores$sites[,1]
+fun.pca2 = fun.pca.scores$sites[,2]
+fun.pca3 = fun.pca.scores$sites[,3]
+
+hist(fun.pca1^2)
+hist(fun.pca2^2)
+hist(fun.pca3^2)
+
+
+### why did you do this glm thing here:? 
+## GLMs on scores
+summary(glm(log(fun.pca1^2) ~ time+locality+source*dust, data = metacor0))
+par(mfrow=c(2,2))
+plot(glm(log(fun.pca1^2) ~ time+locality+source*dust, data = metacor0))
+plot(glm(fun.pca1^2 ~ time+locality+source*dust, data = metacor0))
+
+plot(glm(log(fun.pca2^2) ~ time+locality+source*dust, data = metacor0))
+plot(glm(fun.pca2^2 ~ time+locality+source*dust, data = metacor0))
+
+plot(glm(log(fun.pca3^2) ~ time+locality+source*dust, data = metacor0))
+plot(glm(fun.pca3^2 ~ time+locality+source*dust, data = metacor0))
+
+## dynamic 3D ordination plot
+
+library(vegan3d)
+ordirgl(NMDS.3)
+orglspider(NMDS.3, metacor0$source)
+orgltext(NMDS.3, rownames(Corfun0))
+orgltext(NMDS.3, colnames(Corfun0))
+
+### 5. Community composition models
+## format the data
+
+## Mean-abundance relationship
+## why only this OTU??
+#mean(fun.some$OTU_460)
+#var(fun.some$OTU_460)
+#boxplot(fun.some$OTU_460)
+
+png(file="mean-variance-plot.jpeg", units="mm", height=90, width=90, 
+    pointsize=10, bg="white", res=1200)
+par(mar = c(4,4,1,1))
+plot(0.1,0.1, type="n", xlim=c(0.1,100), 
+     ylim=c(0.1, max(apply(Corfun0,2,var))),
+     xlab="Mean (log scale)", ylab="Variance (log scale)", log="xy", xaxt="n", yaxt="n")
+for (i in 1:length(colnames(Corfun0))) {
+  points(mean(Corfun0[,i]), var(Corfun0[,i]), pch=20, cex=0.7)}
+axis(1, at=c(0.1, 1,5,10), labels=c(0,1,5,10))
+ticks.2 = seq(1,9, by=2)
+labels.2 <- sapply(ticks.2, function(i) as.expression(bquote(10^ .(i))))
+axis(2, at=c(0.1, 10, 1000, 100000, 10000000), 
+     labels=labels.2)
+
+funcor.mvabund = mvabund(Corfun0)
+
+## Model selection
+### if I remember correctly you said that I don't have to do this part and I should just go with the most complicated 
+## model from diversity models
+
+funcor.m1 = manyglm(funcor.mvabund ~ locality+time+source+dust, data= metacor0,
+                 family="negative.binomial", show.residuals=T)
+summary(funcor.m1)
+
+funcor.m2 = manyglm(funcor.mvabund ~ locality+time+source*dust, data= metacor0,
+                    family="negative.binomial", show.residuals=T)
+summary(funcor.m2)
+anova(funcor.m1,funcor.m2, nBoot = 50)
+
+funcor.m3 = manyglm(funcor.mvabund ~ locality*time+source*dust , data= metacor0, 
+                    family="negative.binomial", show.residuals=T) 
+summary(funcor.m3)
+anova(funcor.m2, funcor.m3, nBoot=50)
+
+funcor.m4= manyglm(funcor.mvabund ~ locality*dust+time+source*dust , data= metacor0, 
+                   family="negative.binomial", show.residuals=T)
+summary(funcor.m4)
+anova(funcor.m3,funcor.m4, nBoot = 50)
+
+#funcor.m5=  manyglm(funcor.mvabund ~ locality*dust+locality*time+time*dust+source*dust , data= metacor0, 
+                    #family="negative.binomial", show.residuals=T)
+#anova(funcor.m4,funcor.m5, nBoot = 50)
+
+#funcor.m6=manyglm(funcor.mvabund ~ locality*dust+time*dust+source*dust , data= metacor0, 
+                 # family="negative.binomial", show.residuals=T)
+#anova(funcor.m5,funcor.m6, nBoot = 50)
+
+### model 3 is the better option comparing to other models. but I can't find any explanation for the 
+## interaction effect of time and locality! aparently somthing happend in those times in those localities but 
+### we don't know what!!
+### so I want to continue with model 2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
