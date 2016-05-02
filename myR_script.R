@@ -207,6 +207,7 @@ Corfun0=Corfun[nozero,]
 colnames(Corfun0)
 row.names(Corfun0)
 metacor0=my.metadata[nozero,]
+row.names(Corfun0)==row.names(metacor0)
 ### try to do the NMDS with the new matrix
 
 NMDS1<-metaMDS(Corfun0)
@@ -420,10 +421,91 @@ anova(funcor.m3,funcor.m4, nBoot = 50)
 ### so I want to continue with model 2
 
 
+## Selected model: funcor.m2
+funcor.m2 = manyglm(funcor.mvabund ~ locality+time+source*dust, data= metacor0,
+                    family="negative.binomial", show.residuals=T)
+m2.summary = summary(funcor.m2, nBoot=50, test="LR", p.uni="adjusted",
+                      resamp="montecarlo")
+
+## Analysis of variance explained by the predictors
+funcor.anova.m2 = anova(funcor.m2, nBoot=300, test="LR", p.uni="adjusted", 
+                     resamp="montecarlo")
+
+# ## OTUs significantly explained by the affected by the source?? (at p<=0.001???)
+m2.p.anova <- as.data.frame(funcor.anova.m2$uni.p)
+fun.m2.exp3 = colnames(m2.p.anova)[m2.p.anova[3,]<=0.05]
+fun.m2.exp2 = colnames(m2.p.anova)[m2.p.anova[2,]<=0.05]
+fun.m2.exp1 = colnames(m2.p.anova)[m2.p.anova[1,]<=0.05]
+
+## Visualization of source*dus interactions 
+## Coefficients
+funcor.m2.coef = as.data.frame(funcor.m2$coefficients)
+
+## How do I know if i have an outlier or not?
 
 
+## mean-centering the contrasts
+coef.mean.contrast = funcor.m2.coef - apply(funcor.m2.coef,2,mean)
 
+### 6. Post-hoc test of community model predictions
+funcor.predict = fitted(funcor.m2)
+funcor.predict = cbind(funcor.predict, experiment=metacor0$source)
 
+Tukey.corcom = vector("list")
+for (i in fun.m2.exp3){Tukey.corcom[[i]] = TukeyHSD(aov(log(funcor.predict[,colnames(funcor.predict) == i]) ~ 
+                                                          metacor0$source))}
+
+## extract the significances and test values for each OTU
+Tukey.funcor.p = data.frame()
+for (i in 1:length(Tukey.corcom)){
+  Tukey.funcor.p = rbind(Tukey.funcor.p, Tukey.corcom[[i]]$source[,4]
+}
+colnames(Tukey.funcor.p) = c("Leaf","Branch","Dust")
+                          
+rownames(Tukey.funcore.p) = fun.exp.mc
+
+Tukey.core.test = data.frame()
+for (i in 1:length(Tukey.common)){
+  Tukey.core.test = rbind(Tukey.core.test, Tukey.common[[i]]$experiment[,1])
+}
+colnames(Tukey.core.test) = c("South - North heated",
+                              "South - North natural",
+                              "North natural - North heated")
+rownames(Tukey.core.test) = fun.exp.mc
+
+Tukey.core.lwr = data.frame()
+for (i in 1:length(Tukey.common)){
+  Tukey.core.lwr = rbind(Tukey.core.lwr, Tukey.common[[i]]$experiment[,2])
+}
+colnames(Tukey.core.lwr) = c("South - North heated",
+                             "South - North natural",
+                             "North natural - North heated")
+rownames(Tukey.core.lwr) = fun.exp.mc
+
+Tukey.core.upr = data.frame()
+for (i in 1:length(Tukey.common)){
+  Tukey.core.upr = rbind(Tukey.core.upr, Tukey.common[[i]]$experiment[,3])
+}
+colnames(Tukey.core.upr) = c("South - North heated",
+                             "South - North natural",
+                             "North natural - North heated")
+rownames(Tukey.core.upr) = fun.exp.mc
+
+Tukey.full=cbind(Diff.S.NH=Tukey.core.test[,1],
+                 lwr.S.NH=Tukey.core.lwr[,1],
+                 upr.S.NH=Tukey.core.upr[,1],
+                 p.S.NH = Tukey.core.p[,1],
+                 Diff.S.NN=Tukey.core.test[,2],
+                 lwr.S.NN=Tukey.core.lwr[,2],
+                 upr.S.NN=Tukey.core.upr[,2],
+                 p.S.NN = Tukey.core.p[,2],
+                 Diff.NN.NH=Tukey.core.test[,3],
+                 lwr.NN.NH=Tukey.core.lwr[,3],
+                 upr.NN.NH=Tukey.core.upr[,3],
+                 p.NN.NH = Tukey.core.p[,3])
+rownames(Tukey.full) = rownames(Tukey.core.p)
+
+write.csv(file="Tukey.csv", Tukey.full)
 
 
 
