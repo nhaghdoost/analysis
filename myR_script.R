@@ -11,8 +11,9 @@ my.metadata=read.csv(file = "metadata.csv",header = T, sep = ",",row.names = 1)
 
 # factors
 #my.metadata$time=factor(my.metadata$time) 
-#locality=factor(my.metadata$locality)
+locality=factor(my.metadata$locality)
 source = factor(my.metadata$source, levels = c("Leaf", "Branch", "Dust"))
+my.metadata$time<-factor(my.metadata$time, levels = c("1","2","3"))
 #dust=(my.metadata$dust)
 
 # Richness (Species number) model --  the zero samples were included in richness analysis
@@ -32,7 +33,7 @@ Richness.m3= glm(Richness~locality+ time +source*dust, data = my.metadata, famil
 par(mfrow=c(2,2))
 plot(Richness.m3)
 summary(Richness.m3)
-#when I moved the locality to the first the effect of time is less significant but the numbers are the same.
+
 # The model diagnstic plots show that the third model has a much better fit - much less trend in the residuals
 
 # Look for the AICs: Akaike Information Criteria and model selection
@@ -42,8 +43,8 @@ AIC(Richness.m3)
 # The Poisson-GLM with the source*dust interactions looks like a reliable one, and it has a much better fit to the data according to AIC. 
 
 # Evaluations
-anova(Richness.m3, test="Chisq")
-summary(Richness.m3)
+Richness.m3.anova=anova(Richness.m3, test="Chisq")
+Richness.m3.summary=summary(Richness.m3)
 
 # What does it mean?
 boxplot(Richness ~ my.metadata$source, xlab="Source", ylab="Richness")
@@ -62,6 +63,8 @@ fungl.abun2=fungal.abundance[speciesnum0,]
 
 # This removes the samples with one observation
 MetaObs = my.metadata[speciesnum0,]
+MetaObs$time<-factor(MetaObs$time, levels = c("1","2","3"))
+
 
 
 shannon= diversity(fungl.abun2,index = "shannon")
@@ -71,10 +74,12 @@ hist(simpson)
 hist(log(shannon))
 hist(log(simpson))
 
-## Fishers a log-series and evenness is also in my proposal...
+## Fishers alpha log-series
+Fisheralpha= fisher.alpha(fungl.abun2)
 
-
-
+## Evenness
+Evenness= shannon/log(Richness)
+plot(Evenness)
 ## Shannon models:
 
 shannon.m1=lm(shannon ~ locality+time +source+dust, data=MetaObs)
@@ -94,8 +99,8 @@ anova(shannon.m2, test = "Chisq")
 shannon.m3=glm(shannon~locality+time+source*dust, data=MetaObs, family=Gamma(link="log"))
 par(mfrow=c(2,2))
 plot(shannon.m3)
-summary(shannon.m3) 
-anova(shannon.m3, test = "Chisq")
+shannon.summary=summary(shannon.m3) 
+shannon.anova=anova(shannon.m3, test = "Chisq")
 
 
 AIC(shannon.m1)
@@ -123,8 +128,8 @@ anova(simpson.m2, test= "Chisq")
 simpson.m3=glm(simpson~locality+time+source*dust, data = MetaObs,family = Gamma(link="log"))
 par(mfrow=c(2,2))
 plot(simpson.m3)
-summary(simpson.m3)
-anova(simpson.m3, test= "Chisq")
+simpson.summary=summary(simpson.m3)
+simpson.anova=anova(simpson.m3, test= "Chisq")
 
 AIC(simpson.m1)
 AIC(simpson.m2)
@@ -135,6 +140,12 @@ AIC(simpson.m3)
 plot(MetaObs$dust, shannon)
 boxplot(shannon ~ MetaObs$source)
 
+#### Fishers alpha log-series 
+plot(Fisheralpha)
+Fisheralpha.m=glm(Fisheralpha~time+source*dust+locality, data= MetaObs)
+Fisher.summary=summary(Fisheralpha.m)
+fisher.anova=anova(Fisheralpha.m)
+
 ###Final models:
 ### I changed the order of the factors in the model and it did not really change the results and these three
 ### models are final
@@ -144,11 +155,28 @@ simpson.m3=glm(simpson~time+locality+source*dust, data = MetaObs,family = Gamma(
 
 ####source*dust interactions plot
 library(effects)
-plot(effect("source:dust",Richness.m3,multiline=TRUE))
+plot(effect("source:dust", Richness.m3, multiline=TRUE))
 
 plot(effect("source:dust",shannon.m3,multiline=TRUE))
 
 plot(effect("source:dust",simpson.m3,multiline=TRUE))
+
+##### Species Accumulation Curves
+acum=specaccum(fungal.abundance,method = "exact", permutations = 100,
+          conditioned =TRUE, gamma = "jack1",  w = NULL)
+plot(acum)
+plot(acum, add = FALSE, random = FALSE, ci = 0, 
+     ci.type = c("line"), col = "black",xlab = "Number of samples" , ylab = "Richness"
+     , xvar = c("sites", "individuals", "effort"),ylim )
+
+## Fit Lomolino model to the exact accumulation
+acumodel=fitspecaccum(acum, "lomolino")
+coef(acumodel)
+fitted(acumodel)
+plot(acum,random = FALSE, ci = 0,ci.type = c("line"),xlab = "Number of samples" , ylab = "Richness")
+
+## Add Lomolino model using argument 'add'
+plot(acumodel, add = TRUE, col=2, lwd=2)
 
 #### Define core species:
 ## Summarize reads
@@ -185,8 +213,15 @@ Corname = colnames(Corfun)
 corsamplename=row.names(Corfun)
 
 ## Core OTUs in leaf, branch and dust?
+
+
 ## Core OTUs in each locality?
+
+
 ## Core OTUs in each sampling time?
+
+
+
 
 ### 4. Visualize differences in community composition
 ## run NMDS
@@ -208,6 +243,7 @@ colnames(Corfun0)
 row.names(Corfun0)
 metacor0=my.metadata[nozero,]
 row.names(Corfun0)==row.names(metacor0)
+
 ### try to do the NMDS with the new matrix
 
 NMDS1<-metaMDS(Corfun0)
@@ -218,12 +254,19 @@ NMDS1<-metaMDS(Corfun0, previous= NMDS1)
 ### ploting the NMDS:
 ## plot NMDS
 par(mar=c(4,4,1,1))
-plot(NMDS1$points, type="n", ylim=c(-0.9,0.9), xlab="NMDS1", ylab="NMDS2")
+plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2")
 plot(NMDS1)
 
+# show overlapping samples
+ordiplot(NMDS1, type="text")
 ordispider(NMDS1, metacor0$source , col="grey")
-points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="black")
-mylegend = legend(-1, 0.95, c("leaf","branch","dust"), 
+
+
+
+
+ordispider(NMDS1, metacor0$source , col="grey")
+points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
+mylegend = legend(2, 1.5, c("leaf","branch","dust"), 
                   fill=c("green","orange","gray"), border="white", bty="n")
 with(metacor0,ordiellipse(NMDS1, metacor0$source,cex=.5, 
                           draw="polygon", col=c("green"),
@@ -237,15 +280,11 @@ with(my.metadata,ordiellipse(NMDS1, metacor0$source,cex=.5,
                              draw="polygon", col=c("gray"),
                              alpha=100,kind="se",conf=0.95, 
                              show.groups=(c("Dust"))))
-## can I do this NMDS plots for my localities and times?
 
 ## Three axes
 NMDS.3 <- metaMDS(Corfun0, k=3, trymax=100)
 NMDS.3 <- metaMDS(Corfun0, previous = NMDS.3, k=3, trymax=100)
 
-
-## colors with experiment
-## did not understand the meaning of this part in your Rscript?
 
 ### Axes 1 & 2
 ### why did we use shannon???
@@ -319,7 +358,6 @@ ordiellipse(NMDS.2.3, metacor0$source,cex=.5,
             alpha=50,kind="se",conf=0.95,
             show.groups=(c("Dust")), border="black")
 
-## did not understand this part
 ## PCA
 fun.pca = rda(Corfun0)
 fun.pca.scores = scores(fun.pca, choices=c(1,2,3))
@@ -337,20 +375,6 @@ hist(fun.pca1^2)
 hist(fun.pca2^2)
 hist(fun.pca3^2)
 
-
-### why did you do this glm thing here:? 
-## GLMs on scores
-summary(glm(log(fun.pca1^2) ~ time+locality+source*dust, data = metacor0))
-par(mfrow=c(2,2))
-plot(glm(log(fun.pca1^2) ~ time+locality+source*dust, data = metacor0))
-plot(glm(fun.pca1^2 ~ time+locality+source*dust, data = metacor0))
-
-plot(glm(log(fun.pca2^2) ~ time+locality+source*dust, data = metacor0))
-plot(glm(fun.pca2^2 ~ time+locality+source*dust, data = metacor0))
-
-plot(glm(log(fun.pca3^2) ~ time+locality+source*dust, data = metacor0))
-plot(glm(fun.pca3^2 ~ time+locality+source*dust, data = metacor0))
-
 ## dynamic 3D ordination plot
 
 library(vegan3d)
@@ -359,14 +383,59 @@ orglspider(NMDS.3, metacor0$source)
 orgltext(NMDS.3, rownames(Corfun0))
 orgltext(NMDS.3, colnames(Corfun0))
 
-### 5. Community composition models
-## format the data
+### NMDS plot for localities: 
+par(mar=c(4,4,1,1))
+plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2")
+ordispider(NMDS1, metacor0$locality , col="grey")
+points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
+mylegend2= legend(2, 1.5, c("BISOTON","HASAN ABAD","KHOSRO ABAD", "KEREND", "SORKHE DIZE"), 
+                  fill=c("green","orange","yellow","red","blue"), border="white", bty="n")
+with(metacor0,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
+                          draw="polygon", col=c("green"),
+                          alpha=100,kind="se",conf=0.95, 
+                          show.groups=(c("BISOTON"))))
+with(metacor0,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
+                          draw="polygon", col=c("orange"),
+                          alpha=100,kind="se",conf=0.95, 
+                          show.groups=(c("HASAN ABAD"))))
+with(my.metadata,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
+                             draw="polygon", col=c("yellow"),
+                             alpha=100,kind="se",conf=0.95, 
+                             show.groups=(c("KHOSRO ABAD"))))
+with(my.metadata,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
+                             draw="polygon", col=c("red"),
+                             alpha=100,kind="se",conf=0.95, 
+                             show.groups=(c("KEREND"))))
+with(my.metadata,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
+                             draw="polygon", col=c("blue"),
+                             alpha=100,kind="se",conf=0.95, 
+                             show.groups=(c("SORKHE DIZE"))))
 
-## Mean-abundance relationship
-## why only this OTU??
-#mean(fun.some$OTU_460)
-#var(fun.some$OTU_460)
-#boxplot(fun.some$OTU_460)
+### NMDS plot for time of sampling
+par(mar=c(4,4,1,1))
+plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2")
+ordispider(NMDS1, metacor0$time , col="grey")
+points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
+
+mylegend3= legend(2, 1.5, c("First sampling","Second sampling","Third sampling"), 
+                  fill=c("green","orange","blue"), border="white", bty="n")
+with(metacor0,ordiellipse(NMDS1, metacor0$time,cex=.5, 
+                          draw="polygon", col=c("green"),
+                          alpha=100,kind="se",conf=0.95, 
+                          show.groups=(c("1"))))
+with(metacor0,ordiellipse(NMDS1, metacor0$time,cex=.5, 
+                          draw="polygon", col=c("orange"),
+                          alpha=100,kind="se",conf=0.95, 
+                          show.groups=(c("2"))))
+with(my.metadata,ordiellipse(NMDS1, metacor0$time,cex=.5, 
+                             draw="polygon", col=c("blue"),
+                             alpha=100,kind="se",conf=0.95, 
+                             show.groups=(c("3"))))
+
+
+
+
+### 5. Community composition models
 
 png(file="mean-variance-plot.jpeg", units="mm", height=90, width=90, 
     pointsize=10, bg="white", res=1200)
@@ -383,7 +452,7 @@ axis(2, at=c(0.1, 10, 1000, 100000, 10000000),
      labels=labels.2)
 
 funcor.mvabund = mvabund(Corfun0)
-
+plot(funcor.mvabund)
 ## Model selection
 ### if I remember correctly you said that I don't have to do this part and I should just go with the most complicated 
 ## model from diversity models
@@ -394,8 +463,6 @@ summary(funcor.m1)
 
 funcor.m2 = manyglm(funcor.mvabund ~ locality+time+source*dust, data= metacor0,
                     family="negative.binomial", show.residuals=T)
-summary(funcor.m2)
-anova(funcor.m1,funcor.m2, nBoot = 50)
 
 funcor.m3 = manyglm(funcor.mvabund ~ locality*time+source*dust , data= metacor0, 
                     family="negative.binomial", show.residuals=T) 
@@ -407,35 +474,39 @@ funcor.m4= manyglm(funcor.mvabund ~ locality*dust+time+source*dust , data= metac
 summary(funcor.m4)
 anova(funcor.m3,funcor.m4, nBoot = 50)
 
-#funcor.m5=  manyglm(funcor.mvabund ~ locality*dust+locality*time+time*dust+source*dust , data= metacor0, 
-                    #family="negative.binomial", show.residuals=T)
-#anova(funcor.m4,funcor.m5, nBoot = 50)
-
-#funcor.m6=manyglm(funcor.mvabund ~ locality*dust+time*dust+source*dust , data= metacor0, 
-                 # family="negative.binomial", show.residuals=T)
-#anova(funcor.m5,funcor.m6, nBoot = 50)
 
 ### model 3 is the better option comparing to other models. but I can't find any explanation for the 
 ## interaction effect of time and locality! aparently somthing happend in those times in those localities but 
 ### we don't know what!!
 ### so I want to continue with model 2
-
+## factors:
+metacor0$time=factor(metacor0$time, levels = c("1","2","3"))
+metacor0$source = factor(metacor0$source, levels = c("Leaf", "Branch", "Dust"))
+metacor0$locality=factor(metacor0$locality)
 
 ## Selected model: funcor.m2
 funcor.m2 = manyglm(funcor.mvabund ~ locality+time+source*dust, data= metacor0,
                     family="negative.binomial", show.residuals=T)
-m2.summary = summary(funcor.m2, nBoot=50, test="LR", p.uni="adjusted",
-                      resamp="montecarlo")
+
+plot.manyglm(funcor.m2)
+
+### ask about the error
+
+Model.m2.summary= summary.manyglm(funcor.m2, nBoot=300, test="LR",p.uni="adjusted", 
+                                  resamp="montecarlo")
 
 ## Analysis of variance explained by the predictors
-funcor.anova.m2 = anova(funcor.m2, nBoot=300, test="LR", p.uni="adjusted", 
+funcor.anova.m2 = anova.manyglm(funcor.m2, nBoot=300, test="LR", p.uni="adjusted", 
                      resamp="montecarlo")
 
-# ## OTUs significantly explained by the affected by the source?? (at p<=0.001???)
+# ## OTUs significantly affected by the source?? (at p<=0.001???)
 m2.p.anova <- as.data.frame(funcor.anova.m2$uni.p)
-fun.m2.exp3 = colnames(m2.p.anova)[m2.p.anova[3,]<=0.05]
-fun.m2.exp2 = colnames(m2.p.anova)[m2.p.anova[2,]<=0.05]
-fun.m2.exp1 = colnames(m2.p.anova)[m2.p.anova[1,]<=0.05]
+
+fun.m2.source = colnames(m2.p.anova)[m2.p.anova["source",]<=0.1]
+colnames(m2.p.anova)[m2.p.anova["source",]<=0.001]
+colnames(m2.p.anova)[m2.p.anova["locality",]<=0.1]
+colnames(m2.p.anova)[m2.p.anova["time",]<=0.1]
+
 
 ## Visualization of source*dus interactions 
 ## Coefficients
@@ -445,85 +516,40 @@ funcor.m2.coef = as.data.frame(funcor.m2$coefficients)
 
 
 ## mean-centering the contrasts
-coef.mean.contrast = funcor.m2.coef - apply(funcor.m2.coef,2,mean)
+fun.coef.mean.contrast = funcor.m2.coef - apply(funcor.m2.coef,2,mean)
 
-### 6. Post-hoc test of community model predictions
-funcor.predict = fitted(funcor.m2)
-funcor.predict = cbind(funcor.predict, experiment=metacor0$source)
 
-Tukey.corcom = vector("list")
-for (i in fun.m2.exp3){Tukey.corcom[[i]] = TukeyHSD(aov(log(funcor.predict[,colnames(funcor.predict) == i]) ~ 
-                                                          metacor0$source))}
+### plot effects
 
-## extract the significances and test values for each OTU
-Tukey.funcor.p = data.frame()
-for (i in 1:length(Tukey.corcom)){
-  Tukey.funcor.p = rbind(Tukey.funcor.p, Tukey.corcom[[i]]$source[,4]
-}
-colnames(Tukey.funcor.p) = c("Leaf","Branch","Dust")
-                          
-rownames(Tukey.funcore.p) = fun.exp.mc
+?predict.glm
+predict(funcor.m2, type="response")
 
-Tukey.core.test = data.frame()
-for (i in 1:length(Tukey.common)){
-  Tukey.core.test = rbind(Tukey.core.test, Tukey.common[[i]]$experiment[,1])
-}
-colnames(Tukey.core.test) = c("South - North heated",
-                              "South - North natural",
-                              "North natural - North heated")
-rownames(Tukey.core.test) = fun.exp.mc
+plot(metacor0$dust, predict(funcor.m2, type="response")[,"Gnomoniaceae_sp_66"])
 
-Tukey.core.lwr = data.frame()
-for (i in 1:length(Tukey.common)){
-  Tukey.core.lwr = rbind(Tukey.core.lwr, Tukey.common[[i]]$experiment[,2])
-}
-colnames(Tukey.core.lwr) = c("South - North heated",
-                             "South - North natural",
-                             "North natural - North heated")
-rownames(Tukey.core.lwr) = fun.exp.mc
+plot(metacor0$dust[metacor0$source == "Leaf"], predict(funcor.m2, type="response")
+     [metacor0$source == "Leaf","Gnomoniaceae_sp_66"])
+plot(metacor0$dust[metacor0$source == "Branch"], predict(funcor.m2, type="response")
+     [metacor0$source == "Branch","Gnomoniaceae_sp_66"])
+plot(metacor0$dust[metacor0$source == "Dust"], predict(funcor.m2, type="response")
+     [metacor0$source == "Dust","Gnomoniaceae_sp_66"])
+plot(metacor0$dust[metacor0$source == "Leaf"],
+     Corfun0[metacor0$source == "Leaf","Gnomoniaceae_sp_66"])
+plot(metacor0$dust[metacor0$source == "Leaf"], predict(funcor.m2, type="response")
+     [metacor0$source == "Leaf","Gnomoniaceae_sp_66"])
 
-Tukey.core.upr = data.frame()
-for (i in 1:length(Tukey.common)){
-  Tukey.core.upr = rbind(Tukey.core.upr, Tukey.common[[i]]$experiment[,3])
-}
-colnames(Tukey.core.upr) = c("South - North heated",
-                             "South - North natural",
-                             "North natural - North heated")
-rownames(Tukey.core.upr) = fun.exp.mc
 
-Tukey.full=cbind(Diff.S.NH=Tukey.core.test[,1],
-                 lwr.S.NH=Tukey.core.lwr[,1],
-                 upr.S.NH=Tukey.core.upr[,1],
-                 p.S.NH = Tukey.core.p[,1],
-                 Diff.S.NN=Tukey.core.test[,2],
-                 lwr.S.NN=Tukey.core.lwr[,2],
-                 upr.S.NN=Tukey.core.upr[,2],
-                 p.S.NN = Tukey.core.p[,2],
-                 Diff.NN.NH=Tukey.core.test[,3],
-                 lwr.NN.NH=Tukey.core.lwr[,3],
-                 upr.NN.NH=Tukey.core.upr[,3],
-                 p.NN.NH = Tukey.core.p[,3])
-rownames(Tukey.full) = rownames(Tukey.core.p)
-
-write.csv(file="Tukey.csv", Tukey.full)
+###source*dust interactions plot
 
 
 
+### similarity analysis using anosim and adonis functions (corfun0=fungal abundance matrix for core OTUs and metacor0 
+## is the metadata)
+braysimi= anosim(Corfun0,metacor0$source,permutations = 999,distance = "bray")
+
+jaccardsimi= anosim(Corfun0,metacor0$source, permutations = 999, distance = "jaccard")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+corfunAdon= adonis(Corfun0~locality+time+source*dust,data= metacor0,permutations = 999, method = "bray")
 
 
 
