@@ -3,7 +3,7 @@
 library(mvabund)
 library(vegan)
 library(mgcv)
-
+library(effects)
 # Data input
 
 fungal.abundance= read.csv(file = "morphotype_matrix_incubator.csv", header = T, sep=",", row.names = 1)
@@ -155,9 +155,9 @@ simpson.m3=glm(simpson~time+locality+source*dust, data = MetaObs,family = Gamma(
 
 ####source*dust interactions plot
 library(effects)
-plot(effect("source:dust", Richness.m3, multiline=TRUE))
+plot(effect("source:dust", Richness.m3, multiline=TRUE, ylim=c(0,1)))
 
-plot(effect("source:dust",shannon.m3,multiline=TRUE))
+plot(effect("source:dust",shannon.m3,multiline=TRUE,  ylim=c(-10,10)))
 
 plot(effect("source:dust",simpson.m3,multiline=TRUE))
 
@@ -254,20 +254,12 @@ NMDS1<-metaMDS(Corfun0, previous= NMDS1)
 ### ploting the NMDS:
 ## plot NMDS
 par(mar=c(4,4,1,1))
-plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2")
 plot(NMDS1)
-
-# show overlapping samples
-ordiplot(NMDS1, type="text")
-ordispider(NMDS1, metacor0$source , col="grey")
-
-
-
-
-ordispider(NMDS1, metacor0$source , col="grey")
+plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2")
+ordispider(NMDS1,metacor0$source, col="grey")
 points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
 mylegend = legend(2, 1.5, c("leaf","branch","dust"), 
-                  fill=c("green","orange","gray"), border="white", bty="n")
+                  fill=c("green","orange","blue"), border="white", bty="n")
 with(metacor0,ordiellipse(NMDS1, metacor0$source,cex=.5, 
                           draw="polygon", col=c("green"),
                           alpha=100,kind="se",conf=0.95, 
@@ -277,10 +269,12 @@ with(metacor0,ordiellipse(NMDS1, metacor0$source,cex=.5,
                              alpha=100,kind="se",conf=0.95, 
                              show.groups=(c("Branch"))))
 with(my.metadata,ordiellipse(NMDS1, metacor0$source,cex=.5, 
-                             draw="polygon", col=c("gray"),
+                             draw="polygon", col=c("blue"),
                              alpha=100,kind="se",conf=0.95, 
                              show.groups=(c("Dust"))))
-
+# show overlapping samples
+ordiplot(NMDS1, type="text")
+ordispider(NMDS1, metacor0$source , col="grey")
 ## Three axes
 NMDS.3 <- metaMDS(Corfun0, k=3, trymax=100)
 NMDS.3 <- metaMDS(Corfun0, previous = NMDS.3, k=3, trymax=100)
@@ -540,11 +534,19 @@ plot(metacor0$dust[metacor0$source == "Leaf"], predict(funcor.m2, type="response
 
 ###source*dust interactions plot
 ### Do a simple glm for the two species affected by the source* dust
+library(MASS)
+Microsphaeriopsis.model= glm.nb(Corfun0$Microsphaeriopsis_olivacea ~ locality+time+source*dust, data= metacor0)
+                               
+plot(effect("source:dust",Microsphaeriopsis.model ,multiline=TRUE,confidence.level = 0.95))
+
+anova(Microsphaeriopsis.model)
 
 
+Aureobasidium.model= glm.nb (Corfun0$Aureobasidium_sp_A30 ~ locality+time+source*dust, data= metacor0)
 
+plot(effect("source:dust",Aureobasidium.model ,multiline=TRUE,confidence.level = 0.95))
 
-
+anova(Aureobasidium.model)
 
 
 ### similarity analysis using anosim and adonis functions (corfun0=fungal abundance matrix for core OTUs and metacor0 
@@ -556,8 +558,9 @@ jaccardsimi= anosim(Corfun0,metacor0$source, permutations = 999, distance = "jac
 
 corfunAdon= adonis(Corfun0~locality+time+source*dust,data= metacor0,permutations = 999, method = "bray")
 
+### permanova for all of the species
 
-
+permanova.total=adonis(fungl.abun2~locality+time+source*dust,data=MetaObs,permutations = 999,method = "bray")
 
 
 
