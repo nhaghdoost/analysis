@@ -223,7 +223,7 @@ corsamplename=row.names(Corfun)
 
 
 
-### 4. Visualize differences in community composition
+### Visualize differences in community composition
 ## run NMDS
 #MDS.all <- metaMDS(Corfun)
 #MDS.all <- metaMDS(Corfun, previous = MDS.all)
@@ -435,7 +435,7 @@ with(my.metadata,ordiellipse(NMDS1, metacor0$time,cex=.5,
 
 
 
-### 5. Community composition models
+### Community composition models
 
 png(file="mean-variance-plot.jpeg", units="mm", height=90, width=90, 
     pointsize=10, bg="white", res=1200)
@@ -539,6 +539,11 @@ plot(metacor0$dust[metacor0$source == "Leaf"], predict(funcor.m2, type="response
 
 
 ###source*dust interactions plot
+### Do a simple glm for the two species affected by the source* dust
+
+
+
+
 
 
 
