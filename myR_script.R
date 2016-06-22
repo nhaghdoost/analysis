@@ -12,13 +12,18 @@ my.metadata=read.csv(file = "metadata.csv",header = T, sep = ",",row.names = 1)
 # factors
 #my.metadata$time=factor(my.metadata$time) 
 locality=factor(my.metadata$locality)
-source = factor(my.metadata$source, levels = c("Leaf", "Branch", "Dust"))
+
+# I changed source to Source, as source() seems to be an R function
+Source = factor(my.metadata$source, levels = c("Leaf", "Branch", "Dust"))
 my.metadata$time<-factor(my.metadata$time, levels = c("1","2","3"))
 #dust=(my.metadata$dust)
 
 # Richness (Species number) model --  the zero samples were included in richness analysis
 Richness = apply(fungal.abundance,1,function(vec) sum(vec>0))
 hist(log(Richness))
+
+# Change plotting parameters, so all diagnostic plots are on the same sheet
+par(mfrow=c(2,2))
 
 Richness.m1=lm(Richness~time+locality+source*dust, data = my.metadata)
 plot(Richness.m1) 
@@ -29,12 +34,11 @@ Richness.m2=glm(Richness~time+locality+source+dust, data = my.metadata, family=p
 plot(Richness.m2)
 summary(Richness.m2)
 
-Richness.m3= glm(Richness~locality+ time +source*dust, data = my.metadata, family=poisson(link = "log"))
-par(mfrow=c(2,2))
+Richness.m3= glm(Richness~locality+time+source*dust, data = my.metadata, family=poisson(link = "log"))
 plot(Richness.m3)
 summary(Richness.m3)
 
-# The model diagnstic plots show that the third model has a much better fit - much less trend in the residuals
+# The model diagnstic plots + the AICs show that the third model is a much better fit - much less trend in the residuals
 
 # Look for the AICs: Akaike Information Criteria and model selection
 AIC(Richness.m1)
@@ -47,12 +51,12 @@ Richness.m3.anova=anova(Richness.m3, test="Chisq")
 Richness.m3.summary=summary(Richness.m3)
 
 # What does it mean?
+par(mfrow=c(1,2))
 boxplot(Richness ~ my.metadata$source, xlab="Source", ylab="Richness")
-boxplot(Richness ~ my.metadata$time, xlab="Source", ylab="Richness")
+boxplot(Richness ~ my.metadata$time, xlab="Time", ylab="Richness")
 
 
 #### Shannon and Simpson models. We need to remove the zero-samples.
-
 speciesnum0 = Richness > 1
 fungl.abun2=fungal.abundance[speciesnum0,]
 
@@ -65,10 +69,9 @@ fungl.abun2=fungal.abundance[speciesnum0,]
 MetaObs = my.metadata[speciesnum0,]
 MetaObs$time<-factor(MetaObs$time, levels = c("1","2","3"))
 
-
-
-shannon= diversity(fungl.abun2,index = "shannon")
-simpson=diversity(fungl.abun2,index = "simpson")
+# Calculate diversity indices
+shannon = diversity(fungl.abun2,index = "shannon")
+simpson = diversity(fungl.abun2,index = "simpson")
 hist(shannon)
 hist(simpson)
 hist(log(shannon))
@@ -76,107 +79,129 @@ hist(log(simpson))
 
 ## Fishers alpha log-series
 Fisheralpha= fisher.alpha(fungl.abun2)
+hist(Fisheralpha)
 
 ## Evenness
-Evenness= shannon/log(Richness)
-plot(Evenness)
-## Shannon models:
+RichnessMinTwo = Richness[Richness > 1]
+Evenness= shannon/log(RichnessMinTwo)
+hist(Evenness)
 
+## Shannon models: let's fit all of them first
 shannon.m1=lm(shannon ~ locality+time +source+dust, data=MetaObs)
-plot(shannon.m1)
-
-summary(shannon.m1)
-AIC(shannon.m1)
-anova(shannon.m1, test="Chisq")
-
-
 shannon.m2=glm(shannon~time+locality+source+dust, data=MetaObs, family=Gamma(link="log"))
-plot(shannon.m2)
-
-summary(shannon.m2) 
-anova(shannon.m2, test = "Chisq")
-
 shannon.m3=glm(shannon~locality+time+source*dust, data=MetaObs, family=Gamma(link="log"))
+
+# plot all diagnostics
 par(mfrow=c(2,2))
+plot(shannon.m1)
+plot(shannon.m2)
 plot(shannon.m3)
-shannon.summary=summary(shannon.m3) 
-shannon.anova=anova(shannon.m3, test = "Chisq")
 
-
+# AICs - the third is the best fit + it has the best diagnostic plots
 AIC(shannon.m1)
 AIC(shannon.m2)
 AIC(shannon.m3)
+
+# These are probably not necessary, as these models are worse fits
+# summary(shannon.m1) 
+# anova(shannon.m1, test="Chisq")
+# summary(shannon.m2) 
+# anova(shannon.m2, test = "Chisq")
+
+# Best Shannon model statistics
+shannon.summary=summary(shannon.m3) 
+shannon.anova=anova(shannon.m3, test = "Chisq")
+
 ### I tried changing the order of the factors in the model and it doesn't really change anything. the model m3 is
 ###the best model describing our data
 
-
 ## Simpson models:
-
 simpson.m1=lm(simpson ~ time + locality +source+dust, data=MetaObs)
-plot(simpson.m1)
-summary(simpson.m1)
-anova(simpson.m1, test= "Chisq")
-
-
-
 simpson.m2=glm(simpson~time+locality+source+dust, data=MetaObs,family=Gamma(link = "log"))
-plot(simpson.m2)
-summary(simpson.m2)
-anova(simpson.m2, test= "Chisq")
-
-
 simpson.m3=glm(simpson~locality+time+source*dust, data = MetaObs,family = Gamma(link="log"))
-par(mfrow=c(2,2))
-plot(simpson.m3)
-simpson.summary=summary(simpson.m3)
-simpson.anova=anova(simpson.m3, test= "Chisq")
 
+# Diagnostics
+plot(simpson.m1)
+plot(simpson.m2)
+plot(simpson.m3)
+
+# AICs - again everything says the m3 is the best.
 AIC(simpson.m1)
 AIC(simpson.m2)
 AIC(simpson.m3)
 
+# Model statistics
+# summary(simpson.m1)
+# anova(simpson.m1, test= "Chisq")
+# summary(simpson.m2)
+# anova(simpson.m2, test= "Chisq")
+
+simpson.summary=summary(simpson.m3)
+simpson.anova=anova(simpson.m3, test= "Chisq")
 
 #### Plot effects
-plot(MetaObs$dust, shannon)
-boxplot(shannon ~ MetaObs$source)
+par(mfrow=c(1,2))
 
-#### Fishers alpha log-series 
-plot(Fisheralpha)
+# Actually, let's plot the model predictions.
+plot(MetaObs$dust, fitted(shannon.m3), xlab="Dust concentration")
+boxplot(fitted(shannon.m3) ~ MetaObs$source, xlab="Source of isolation")
+
+#### Fishers alpha log-series: do we really need this?
+hist(Fisheralpha)
 Fisheralpha.m=glm(Fisheralpha~time+source*dust+locality, data= MetaObs)
+
+par(mfrow=c(2,2))
+plot(Fisheralpha.m)
+
 Fisher.summary=summary(Fisheralpha.m)
 fisher.anova=anova(Fisheralpha.m)
 
 ###Final models:
 ### I changed the order of the factors in the model and it did not really change the results and these three
 ### models are final
-Richness.m3= glm(Richness~locality+ time +source*dust, data = my.metadata, family=poisson(link = "log"))
-shannon.m3=glm(shannon~locality+time+source*dust, data=MetaObs, family=Gamma(link="log"))
-simpson.m3=glm(simpson~time+locality+source*dust, data = MetaObs,family = Gamma(link="log"))
+# Richness.m3= glm(Richness~locality+ time +source*dust, data = my.metadata, family=poisson(link = "log"))
+# shannon.m3=glm(shannon~locality+time+source*dust, data=MetaObs, family=Gamma(link="log"))
+# simpson.m3=glm(simpson~locality+time+source*dust, data = MetaObs,family = Gamma(link="log"))
 
 ####source*dust interactions plot
-library(effects)
-plot(effect("source:dust", Richness.m3, multiline=TRUE, ylim=c(0,1)))
+# library(effects)
+# plot(effect("source:dust", Richness.m3, multiline=TRUE, ylim=c(0,1)))
 
-plot(effect("source:dust",shannon.m3,multiline=TRUE,  ylim=c(-10,10)))
+shannon.effect = effect("source:dust",shannon.m3,multiline=TRUE,  ylim=c(-10,10))
+shan.eff.sum = summary(shannon.effect)
 
-plot(effect("source:dust",simpson.m3,multiline=TRUE))
+# Adapt this for richness and simpson
+par(mfrow=c(1,3), mar = c(5,3,2,1))
+for (i in levels(MetaObs$source)) {
+  plot(c(min(MetaObs$dust), max(MetaObs$dust)),
+       c(min(shan.eff.sum$lower[i,]), max(shan.eff.sum$upper[i,])), 
+       type="n", xlab = paste(i), ylab = "")
+  lines(c(min(MetaObs$dust), max(MetaObs$dust)),
+        c(min(shan.eff.sum$effect[i,]), max(shan.eff.sum$effect[i,])))
+  lines(c(min(MetaObs$dust), max(MetaObs$dust)),
+        c(min(shan.eff.sum$lower[i,]), max(shan.eff.sum$lower[i,])), 
+        lty="dashed")
+  lines(c(min(MetaObs$dust), max(MetaObs$dust)),
+        c(min(shan.eff.sum$upper[i,]), max(shan.eff.sum$upper[i,])),
+        lty="dashed")
+}
 
-##### Species Accumulation Curves
-acum=specaccum(fungal.abundance,method = "exact", permutations = 100,
-          conditioned =TRUE, gamma = "jack1",  w = NULL)
-plot(acum)
-plot(acum, add = FALSE, random = FALSE, ci = 0, 
-     ci.type = c("line"), col = "black",xlab = "Number of samples" , ylab = "Richness"
-     , xvar = c("sites", "individuals", "effort"),ylim )
-
-## Fit Lomolino model to the exact accumulation
-acumodel=fitspecaccum(acum, "lomolino")
-coef(acumodel)
-fitted(acumodel)
-plot(acum,random = FALSE, ci = 0,ci.type = c("line"),xlab = "Number of samples" , ylab = "Richness")
-
-## Add Lomolino model using argument 'add'
-plot(acumodel, add = TRUE, col=2, lwd=2)
+# ##### Species Accumulation Curves
+# acum=specaccum(fungal.abundance,method = "exact", permutations = 100,
+#           conditioned =TRUE, gamma = "jack1",  w = NULL)
+# plot(acum)
+# plot(acum, add = FALSE, random = FALSE, ci = 0, 
+#      ci.type = c("line"), col = "black",xlab = "Number of samples" , ylab = "Richness"
+#      , xvar = c("sites", "individuals", "effort"),ylim )
+# 
+# ## Fit Lomolino model to the exact accumulation
+# acumodel=fitspecaccum(acum, "lomolino")
+# coef(acumodel)
+# fitted(acumodel)
+# plot(acum,random = FALSE, ci = 0,ci.type = c("line"),xlab = "Number of samples" , ylab = "Richness")
+# 
+# ## Add Lomolino model using argument 'add'
+# plot(acumodel, add = TRUE, col=2, lwd=2)
 
 #### Define core species:
 ## Summarize reads
