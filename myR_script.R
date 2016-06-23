@@ -2,6 +2,7 @@
 ## Pakages we need for our project
 library(mvabund)
 library(vegan)
+library(boral)
 # library(mgcv)
 library(effects)
 # Data input
@@ -288,188 +289,224 @@ for (i in levels(MetaOne$source)) {
 # metacor0=my.metadata[nozero,]
 # row.names(Corfun0)==row.names(metacor0)
 
-### try to do the NMDS with the new matrix
+# Model-based ordination
 
-NMDS1<-metaMDS(fungl.abun.not.zero)
-NMDS1<-metaMDS(fungl.abun.not.zero, previous= NMDS1)
+# Remove species present in only one sample
+CountInSample = apply(fungl.abun.not.zero,2,sum)
 
-### yes its working :) .
-# But it is actually not much converging yet...
+# I needed to remove the species that were seen in a few samples.
+fung.abun.reduced = fungl.abun.not.zero[,CountInSample > 10]
+fung.abun.reduced = fung.abun.reduced[apply(fung.abun.reduced,1,sum) > 0,]
 
-### ploting the NMDS:
-## plot NMDS
-par(mar=c(4,4,1,1), mfrow=c(1,1))
-plot(NMDS1)
-plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2")
-ordispider(NMDS1,MetaRich$source, col="grey")
-points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
-mylegend = legend(2, 1.5, c("leaf","branch","dust"), 
-                  fill=c("green","orange","blue"), border="white", bty="n")
-with(metacor0,ordiellipse(NMDS1, metacor0$source,cex=.5, 
-                          draw="polygon", col=c("green"),
-                          alpha=100,kind="se",conf=0.95, 
-                          show.groups=(c("Leaf"))))
-with(metacor0,ordiellipse(NMDS1, metacor0$source,cex=.5, 
-                             draw="polygon", col=c("orange"),
-                             alpha=100,kind="se",conf=0.95, 
-                             show.groups=(c("Branch"))))
-with(my.metadata,ordiellipse(NMDS1, metacor0$source,cex=.5, 
-                             draw="polygon", col=c("blue"),
-                             alpha=100,kind="se",conf=0.95, 
-                             show.groups=(c("Dust"))))
-# show overlapping samples
-ordiplot(NMDS1, type="text")
-ordispider(NMDS1, metacor0$source , col="grey")
-## Three axes
-NMDS.3 <- metaMDS(Corfun0, k=3, trymax=100)
-NMDS.3 <- metaMDS(Corfun0, previous = NMDS.3, k=3, trymax=100)
+MetaOrd = MetaRich[rownames(MetaRich) %in% rownames(fung.abun.reduced),]
 
+# not working
+ModelOrd <- boral(fung.abun.reduced, family = "negative.binomial", num.lv = 2, 
+                  n.burnin = 10, n.iteration = 100, n.thin = 1)
 
-### Axes 1 & 2
-### why did we use shannon???
-png(file="community_NMDS_1-2.jpeg", units="mm", height=60, width=180, 
-    pointsize=10, bg="white", res=1200)
-par(mfrow=c(1,3))
-par(mar=c(4,4,1,1))
-NMDS.1.2 = ordiplot(NMDS.3, choices=c(1,2), type="n", 
-                       xlab="NMDS1", ylab="NMDS2")
-ordispider(NMDS.1.2,metacor0$source, col="grey")
-points(NMDS.3$points[,1], NMDS.3$points[,2], pch=20, 
-       cex=exp(2*shannon)/100,col="gray")
-ordiellipse(NMDS.1.2, metacor0$source,cex=.5, 
-            draw="polygon", col=c("green"),
-            alpha=100,kind="se",conf=0.95, 
-            show.groups=(c("Leaf")), border="green")
-ordiellipse(NMDS.1.2, metacor0$source,cex=.5, 
-            draw="polygon", col=c("orange"),
-            alpha=100,kind="se",conf=0.95,
-            show.groups=(c("Branch")), border="orange")
-ordiellipse(NMDS.1.2, metacor0$source,cex=.5, 
-            draw="polygon", col=c("gray"),
-            alpha=50,kind="se",conf=0.95,
-            show.groups=(c("Dust")), border="black")
+# Error message: MCMC fitting through JAGS failed. This is likely due to the
+# prior on the dispersion (size) parameter of the negative binomial distribution
+# been too uninformative (see below). Please consider a tougher prior or switch
+# to a Poisson family for those response that don't appear to actually be
+# overdispersed. [1] "Error : Error in node all.params[7,4]\nSlicer stuck at
+# value with infinite density\n\n\n" attr(,"class") [1] "try-error" 
+# attr(,"condition") <simpleError: Error in node all.params[7,4] Slicer stuck at
+# value with infinite density
 
-### Axes 1 & 3
+# I think this failed because the data is extremely overdispersed
+# plot(0.1,0.1, type="n", xlim=c(0.1,5), ylim=c(0.1, max(apply(fung.abund.reduced,2,var))), xlab="Mean", ylab="Variance") # ann=FALSE, 
+# points(apply(fung.abund.reduced,2,mean), apply(fung.abund.reduced,2,var), pch=20)
+# title(main="Untransformed data")
 
-png(file="community_NMDS_1-3.jpeg", units="mm", height=60, width=180, 
-    pointsize=10, bg="white", res=1200)
-par(mfrow=c(1,3))
-par(mar=c(4,4,1,1))
-NMDS.1.3 = ordiplot(NMDS.3, choices=c(1,3), type="n", 
-                    xlab="NMDS1", ylab="NMDS3")
-ordispider(NMDS.1.3,metacor0$source, col="grey")
-points(NMDS.3$points[,1], NMDS.3$points[,3], pch=20, 
-       cex=exp(2*shannon)/100,col="gray")
-ordiellipse(NMDS.1.3, metacor0$source,cex=.5, 
-            draw="polygon", col=c("green"),
-            alpha=100,kind="se",conf=0.95, 
-            show.groups=(c("Leaf")), border="green")
-ordiellipse(NMDS.1.3, metacor0$source,cex=.5, 
-            draw="polygon", col=c("orange"),
-            alpha=100,kind="se",conf=0.95,
-            show.groups=(c("Branch")), border="orange")
-ordiellipse(NMDS.1.3, metacor0$source,cex=.5, 
-            draw="polygon", col=c("gray"),
-            alpha=50,kind="se",conf=0.95,
-            show.groups=(c("Dust")), border="black")
+## model diagnostics
+plot(ModelOrd, ask = FALSE, mfrow = c(2,2))
 
-### Axes 2 & 3
+# Ordination plot. Please make it similar as the NMDS.
+plot(ModelOrd$lv.median, col=as.numeric(MetaOrd$source), 
+     pch=19, main="Latent variable model", las=1)
 
-png(file="community_NMDS_2-3.jpeg", units="mm", height=60, width=180, 
-    pointsize=10, bg="white", res=1200)
-par(mfrow=c(1,3))
-par(mar=c(4,4,1,1))
-NMDS.2.3 = ordiplot(NMDS.3, choices=c(2,3), type="n", 
-                    xlab="NMDS2", ylab="NMDS3")
-ordispider(NMDS.2.3,metacor0$source, col="grey")
-points(NMDS.3$points[,2], NMDS.3$points[,3], pch=20, 
-       cex=exp(2*shannon)/100,col="gray")
-ordiellipse(NMDS.2.3, metacor0$source,cex=.5, 
-            draw="polygon", col=c("green"),
-            alpha=100,kind="se",conf=0.95, 
-            show.groups=(c("Leaf")), border="green")
-ordiellipse(NMDS.2.3, metacor0$source,cex=.5, 
-            draw="polygon", col=c("orange"),
-            alpha=100,kind="se",conf=0.95,
-            show.groups=(c("Branch")), border="orange")
-ordiellipse(NMDS.2.3, metacor0$source,cex=.5, 
-            draw="polygon", col=c("gray"),
-            alpha=50,kind="se",conf=0.95,
-            show.groups=(c("Dust")), border="black")
+# The NMDS will not be necessary anymore. If you run the two lines below, 
+# you will see how locality and dispersal are mixed up because of the overdispersion.
+# This is very strong for the green samples (leaves?).
+NMDS1<-metaMDS(fung.abun.reduced)
+plot(NMDS1$points, ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2", 
+     col=as.numeric(MetaOrd$source), pch=19)
 
-## PCA
-fun.pca = rda(Corfun0)
-fun.pca.scores = scores(fun.pca, choices=c(1,2,3))
-fun.pca.eigenvals = eigenvals(fun.pca)
-
-## explained by the first three axes: 52%
-(fun.pca.eigenvals[1] + fun.pca.eigenvals[2] + fun.pca.eigenvals[3])/sum(fun.pca.eigenvals)
-
-## axis distributions
-fun.pca1 = fun.pca.scores$sites[,1]
-fun.pca2 = fun.pca.scores$sites[,2]
-fun.pca3 = fun.pca.scores$sites[,3]
-
-hist(fun.pca1^2)
-hist(fun.pca2^2)
-hist(fun.pca3^2)
-
-## dynamic 3D ordination plot
-
-library(vegan3d)
-ordirgl(NMDS.3)
-orglspider(NMDS.3, metacor0$source)
-orgltext(NMDS.3, rownames(Corfun0))
-orgltext(NMDS.3, colnames(Corfun0))
-
-### NMDS plot for localities: 
-par(mar=c(4,4,1,1))
-plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2")
-ordispider(NMDS1, metacor0$locality , col="grey")
-points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
-mylegend2= legend(2, 1.5, c("BISOTON","HASAN ABAD","KHOSRO ABAD", "KEREND", "SORKHE DIZE"), 
-                  fill=c("green","orange","yellow","red","blue"), border="white", bty="n")
-with(metacor0,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
-                          draw="polygon", col=c("green"),
-                          alpha=100,kind="se",conf=0.95, 
-                          show.groups=(c("BISOTON"))))
-with(metacor0,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
-                          draw="polygon", col=c("orange"),
-                          alpha=100,kind="se",conf=0.95, 
-                          show.groups=(c("HASAN ABAD"))))
-with(my.metadata,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
-                             draw="polygon", col=c("yellow"),
-                             alpha=100,kind="se",conf=0.95, 
-                             show.groups=(c("KHOSRO ABAD"))))
-with(my.metadata,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
-                             draw="polygon", col=c("red"),
-                             alpha=100,kind="se",conf=0.95, 
-                             show.groups=(c("KEREND"))))
-with(my.metadata,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
-                             draw="polygon", col=c("blue"),
-                             alpha=100,kind="se",conf=0.95, 
-                             show.groups=(c("SORKHE DIZE"))))
-
-### NMDS plot for time of sampling
-par(mar=c(4,4,1,1))
-plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2")
-ordispider(NMDS1, metacor0$time , col="grey")
-points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
-
-mylegend3= legend(2, 1.5, c("First sampling","Second sampling","Third sampling"), 
-                  fill=c("green","orange","blue"), border="white", bty="n")
-with(metacor0,ordiellipse(NMDS1, metacor0$time,cex=.5, 
-                          draw="polygon", col=c("green"),
-                          alpha=100,kind="se",conf=0.95, 
-                          show.groups=(c("1"))))
-with(metacor0,ordiellipse(NMDS1, metacor0$time,cex=.5, 
-                          draw="polygon", col=c("orange"),
-                          alpha=100,kind="se",conf=0.95, 
-                          show.groups=(c("2"))))
-with(my.metadata,ordiellipse(NMDS1, metacor0$time,cex=.5, 
-                             draw="polygon", col=c("blue"),
-                             alpha=100,kind="se",conf=0.95, 
-                             show.groups=(c("3"))))
+# ### ploting the NMDS:
+# ## plot NMDS
+# par(mar=c(4,4,1,1), mfrow=c(1,1))
+# # plot(NMDS1)
+# plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2", 
+#      col=as.numeric(MetaOrd$source))
+# ordispider(NMDS1,MetaRich$source, col="grey")
+# points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
+# mylegend = legend(2, 1.5, c("leaf","branch","dust"), 
+#                   fill=c("green","orange","blue"), border="white", bty="n")
+# with(metacor0,ordiellipse(NMDS1, metacor0$source,cex=.5, 
+#                           draw="polygon", col=c("green"),
+#                           alpha=100,kind="se",conf=0.95, 
+#                           show.groups=(c("Leaf"))))
+# with(metacor0,ordiellipse(NMDS1, metacor0$source,cex=.5, 
+#                              draw="polygon", col=c("orange"),
+#                              alpha=100,kind="se",conf=0.95, 
+#                              show.groups=(c("Branch"))))
+# with(my.metadata,ordiellipse(NMDS1, metacor0$source,cex=.5, 
+#                              draw="polygon", col=c("blue"),
+#                              alpha=100,kind="se",conf=0.95, 
+#                              show.groups=(c("Dust"))))
+# # show overlapping samples
+# ordiplot(NMDS1, type="text")
+# ordispider(NMDS1, metacor0$source , col="grey")
+# ## Three axes
+# NMDS.3 <- metaMDS(Corfun0, k=3, trymax=100)
+# NMDS.3 <- metaMDS(Corfun0, previous = NMDS.3, k=3, trymax=100)
+# 
+# 
+# ### Axes 1 & 2
+# ### why did we use shannon???
+# png(file="community_NMDS_1-2.jpeg", units="mm", height=60, width=180, 
+#     pointsize=10, bg="white", res=1200)
+# par(mfrow=c(1,3))
+# par(mar=c(4,4,1,1))
+# NMDS.1.2 = ordiplot(NMDS.3, choices=c(1,2), type="n", 
+#                        xlab="NMDS1", ylab="NMDS2")
+# ordispider(NMDS.1.2,metacor0$source, col="grey")
+# points(NMDS.3$points[,1], NMDS.3$points[,2], pch=20, 
+#        cex=exp(2*shannon)/100,col="gray")
+# ordiellipse(NMDS.1.2, metacor0$source,cex=.5, 
+#             draw="polygon", col=c("green"),
+#             alpha=100,kind="se",conf=0.95, 
+#             show.groups=(c("Leaf")), border="green")
+# ordiellipse(NMDS.1.2, metacor0$source,cex=.5, 
+#             draw="polygon", col=c("orange"),
+#             alpha=100,kind="se",conf=0.95,
+#             show.groups=(c("Branch")), border="orange")
+# ordiellipse(NMDS.1.2, metacor0$source,cex=.5, 
+#             draw="polygon", col=c("gray"),
+#             alpha=50,kind="se",conf=0.95,
+#             show.groups=(c("Dust")), border="black")
+# 
+# ### Axes 1 & 3
+# 
+# png(file="community_NMDS_1-3.jpeg", units="mm", height=60, width=180, 
+#     pointsize=10, bg="white", res=1200)
+# par(mfrow=c(1,3))
+# par(mar=c(4,4,1,1))
+# NMDS.1.3 = ordiplot(NMDS.3, choices=c(1,3), type="n", 
+#                     xlab="NMDS1", ylab="NMDS3")
+# ordispider(NMDS.1.3,metacor0$source, col="grey")
+# points(NMDS.3$points[,1], NMDS.3$points[,3], pch=20, 
+#        cex=exp(2*shannon)/100,col="gray")
+# ordiellipse(NMDS.1.3, metacor0$source,cex=.5, 
+#             draw="polygon", col=c("green"),
+#             alpha=100,kind="se",conf=0.95, 
+#             show.groups=(c("Leaf")), border="green")
+# ordiellipse(NMDS.1.3, metacor0$source,cex=.5, 
+#             draw="polygon", col=c("orange"),
+#             alpha=100,kind="se",conf=0.95,
+#             show.groups=(c("Branch")), border="orange")
+# ordiellipse(NMDS.1.3, metacor0$source,cex=.5, 
+#             draw="polygon", col=c("gray"),
+#             alpha=50,kind="se",conf=0.95,
+#             show.groups=(c("Dust")), border="black")
+# 
+# ### Axes 2 & 3
+# 
+# png(file="community_NMDS_2-3.jpeg", units="mm", height=60, width=180, 
+#     pointsize=10, bg="white", res=1200)
+# par(mfrow=c(1,3))
+# par(mar=c(4,4,1,1))
+# NMDS.2.3 = ordiplot(NMDS.3, choices=c(2,3), type="n", 
+#                     xlab="NMDS2", ylab="NMDS3")
+# ordispider(NMDS.2.3,metacor0$source, col="grey")
+# points(NMDS.3$points[,2], NMDS.3$points[,3], pch=20, 
+#        cex=exp(2*shannon)/100,col="gray")
+# ordiellipse(NMDS.2.3, metacor0$source,cex=.5, 
+#             draw="polygon", col=c("green"),
+#             alpha=100,kind="se",conf=0.95, 
+#             show.groups=(c("Leaf")), border="green")
+# ordiellipse(NMDS.2.3, metacor0$source,cex=.5, 
+#             draw="polygon", col=c("orange"),
+#             alpha=100,kind="se",conf=0.95,
+#             show.groups=(c("Branch")), border="orange")
+# ordiellipse(NMDS.2.3, metacor0$source,cex=.5, 
+#             draw="polygon", col=c("gray"),
+#             alpha=50,kind="se",conf=0.95,
+#             show.groups=(c("Dust")), border="black")
+# 
+# ## PCA
+# fun.pca = rda(Corfun0)
+# fun.pca.scores = scores(fun.pca, choices=c(1,2,3))
+# fun.pca.eigenvals = eigenvals(fun.pca)
+# 
+# ## explained by the first three axes: 52%
+# (fun.pca.eigenvals[1] + fun.pca.eigenvals[2] + fun.pca.eigenvals[3])/sum(fun.pca.eigenvals)
+# 
+# ## axis distributions
+# fun.pca1 = fun.pca.scores$sites[,1]
+# fun.pca2 = fun.pca.scores$sites[,2]
+# fun.pca3 = fun.pca.scores$sites[,3]
+# 
+# hist(fun.pca1^2)
+# hist(fun.pca2^2)
+# hist(fun.pca3^2)
+# 
+# ## dynamic 3D ordination plot
+# 
+# library(vegan3d)
+# ordirgl(NMDS.3)
+# orglspider(NMDS.3, metacor0$source)
+# orgltext(NMDS.3, rownames(Corfun0))
+# orgltext(NMDS.3, colnames(Corfun0))
+# 
+# ### NMDS plot for localities: 
+# par(mar=c(4,4,1,1))
+# plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2")
+# ordispider(NMDS1, metacor0$locality , col="grey")
+# points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
+# mylegend2= legend(2, 1.5, c("BISOTON","HASAN ABAD","KHOSRO ABAD", "KEREND", "SORKHE DIZE"), 
+#                   fill=c("green","orange","yellow","red","blue"), border="white", bty="n")
+# with(metacor0,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
+#                           draw="polygon", col=c("green"),
+#                           alpha=100,kind="se",conf=0.95, 
+#                           show.groups=(c("BISOTON"))))
+# with(metacor0,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
+#                           draw="polygon", col=c("orange"),
+#                           alpha=100,kind="se",conf=0.95, 
+#                           show.groups=(c("HASAN ABAD"))))
+# with(my.metadata,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
+#                              draw="polygon", col=c("yellow"),
+#                              alpha=100,kind="se",conf=0.95, 
+#                              show.groups=(c("KHOSRO ABAD"))))
+# with(my.metadata,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
+#                              draw="polygon", col=c("red"),
+#                              alpha=100,kind="se",conf=0.95, 
+#                              show.groups=(c("KEREND"))))
+# with(my.metadata,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
+#                              draw="polygon", col=c("blue"),
+#                              alpha=100,kind="se",conf=0.95, 
+#                              show.groups=(c("SORKHE DIZE"))))
+# 
+# ### NMDS plot for time of sampling
+# par(mar=c(4,4,1,1))
+# plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2")
+# ordispider(NMDS1, metacor0$time , col="grey")
+# points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
+# 
+# mylegend3= legend(2, 1.5, c("First sampling","Second sampling","Third sampling"), 
+#                   fill=c("green","orange","blue"), border="white", bty="n")
+# with(metacor0,ordiellipse(NMDS1, metacor0$time,cex=.5, 
+#                           draw="polygon", col=c("green"),
+#                           alpha=100,kind="se",conf=0.95, 
+#                           show.groups=(c("1"))))
+# with(metacor0,ordiellipse(NMDS1, metacor0$time,cex=.5, 
+#                           draw="polygon", col=c("orange"),
+#                           alpha=100,kind="se",conf=0.95, 
+#                           show.groups=(c("2"))))
+# with(my.metadata,ordiellipse(NMDS1, metacor0$time,cex=.5, 
+#                              draw="polygon", col=c("blue"),
+#                              alpha=100,kind="se",conf=0.95, 
+#                              show.groups=(c("3"))))
 
 
 
