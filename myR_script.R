@@ -2,7 +2,7 @@
 ## Pakages we need for our project
 library(mvabund)
 library(vegan)
-library(mgcv)
+# library(mgcv)
 library(effects)
 # Data input
 
@@ -18,67 +18,86 @@ Source = factor(my.metadata$source, levels = c("Leaf", "Branch", "Dust"))
 my.metadata$time<-factor(my.metadata$time, levels = c("1","2","3"))
 #dust=(my.metadata$dust)
 
-# Richness (Species number) model --  the zero samples were included in richness analysis
+# Richness (Species number) model
+# I removed the zero-observation samples.
 Richness = apply(fungal.abundance,1,function(vec) sum(vec>0))
 hist(log(Richness))
+
+# We need to remove the zero-samples.
+RichNotZero = Richness > 0
+fungl.abun.not.zero=fungal.abundance[RichNotZero,]
+
+# Richness with samples that have observations
+RichnessNotZero = specnumber(fungl.abun.not.zero)
+hist(RichnessNotZero)
+
+# This removes the samples with one observation
+MetaRich = my.metadata[RichNotZero,]
+MetaRich$time<-factor(MetaRich$time, levels = c("1","2","3"))
 
 # Change plotting parameters, so all diagnostic plots are on the same sheet
 par(mfrow=c(2,2))
 
-Richness.m1=lm(Richness~time+locality+source*dust, data = my.metadata)
+Richness.m1=lm(RichnessNotZero~time+locality+source*dust, data = MetaRich)
 plot(Richness.m1) 
 # This is a model diagnostic plot.
-summary(Richness.m1)
+# summary(Richness.m1)
 
-Richness.m2=glm(Richness~time+locality+source+dust, data = my.metadata, family=poisson(link = "log"))
+Richness.m2=glm(RichnessNotZero~time+locality+source+dust, data = MetaRich, 
+                family=poisson(link = "log"))
 plot(Richness.m2)
-summary(Richness.m2)
+# summary(Richness.m2)
 
-Richness.m3= glm(Richness~locality+time+source*dust, data = my.metadata, family=poisson(link = "log"))
-plot(Richness.m3)
-summary(Richness.m3)
-
-# The model diagnstic plots + the AICs show that the third model is a much better fit - much less trend in the residuals
+Richness.m3= glm(RichnessNotZero~locality+time+source*dust, data = MetaRich, 
+                 family=poisson(link = "log"))
+plot(Richness.m3) # this model is still quite crappy, but no idea what else to include.
 
 # Look for the AICs: Akaike Information Criteria and model selection
 AIC(Richness.m1)
 AIC(Richness.m2)
 AIC(Richness.m3)
-# The Poisson-GLM with the source*dust interactions looks like a reliable one, and it has a much better fit to the data according to AIC. 
+# The AIC says that the simple linear model is the best fit 
+# (although still crappy according to the diagnostic plot)
 
 # Evaluations
-Richness.m3.anova=anova(Richness.m3, test="Chisq")
-Richness.m3.summary=summary(Richness.m3)
+Richness.m1.anova=anova(Richness.m1, test="Chisq")
+Richness.m1.summary=summary(Richness.m1)
 
-# What does it mean?
-par(mfrow=c(1,2))
-boxplot(Richness ~ my.metadata$source, xlab="Source", ylab="Richness")
-boxplot(Richness ~ my.metadata$time, xlab="Time", ylab="Richness")
+# What does it mean? With predicted values
+par(mfrow=c(1,1))
+boxplot(fitted(Richness.m1) ~ MetaRich$source, xlab="Source", ylab="Richness")
+# Richness in branch and dust similar, but richness stat. sign. lower in leaf
 
+# Put the interaction plots here:
 
-#### Shannon and Simpson models. We need to remove the zero-samples.
-speciesnum0 = Richness > 1
-fungl.abun2=fungal.abundance[speciesnum0,]
-
+#### Shannon and Simpson models.
 #abun0=Richness>0
 #fun.abun0=fungal.abundance[abun0,]
 #Meta0=my.metadata[abun0,]
 #row.names(fun.abun0)==row.names(Meta0)
 
-# This removes the samples with one observation
-MetaObs = my.metadata[speciesnum0,]
-MetaObs$time<-factor(MetaObs$time, levels = c("1","2","3"))
+# Keep only samples with at least two OTUs
+RichNotOne = Richness > 1
+fungl.abun.not.one=fungal.abundance[RichNotOne,]
+
+# Richness with samples that have observations
+
+# This keeps observations with at least two OTUs
+MetaOne = my.metadata[RichNotOne,]
+MetaOne$time<-factor(MetaOne$time, levels = c("1","2","3"))
 
 # Calculate diversity indices
-shannon = diversity(fungl.abun2,index = "shannon")
-simpson = diversity(fungl.abun2,index = "simpson")
+shannon = diversity(fungl.abun.not.one,index = "shannon")
+simpson = diversity(fungl.abun.not.one,index = "simpson")
 hist(shannon)
 hist(simpson)
 hist(log(shannon))
 hist(log(simpson))
 
 ## Fishers alpha log-series
-Fisheralpha= fisher.alpha(fungl.abun2)
+# Check what Fisher's alpha means. 
+# You get very high values with only a few species observations.
+Fisheralpha= fisher.alpha(fungl.abun.not.one)
 hist(Fisheralpha)
 
 ## Evenness
@@ -87,9 +106,9 @@ Evenness= shannon/log(RichnessMinTwo)
 hist(Evenness)
 
 ## Shannon models: let's fit all of them first
-shannon.m1=lm(shannon ~ locality+time +source+dust, data=MetaObs)
-shannon.m2=glm(shannon~time+locality+source+dust, data=MetaObs, family=Gamma(link="log"))
-shannon.m3=glm(shannon~locality+time+source*dust, data=MetaObs, family=Gamma(link="log"))
+shannon.m1=lm(shannon ~ locality+time +source+dust, data=MetaOne)
+shannon.m2=glm(shannon~time+locality+source+dust, data=MetaOne, family=Gamma(link="log"))
+shannon.m3=glm(shannon~locality+time+source*dust, data=MetaOne, family=Gamma(link="log"))
 
 # plot all diagnostics
 par(mfrow=c(2,2))
@@ -116,9 +135,9 @@ shannon.anova=anova(shannon.m3, test = "Chisq")
 ###the best model describing our data
 
 ## Simpson models:
-simpson.m1=lm(simpson ~ time + locality +source+dust, data=MetaObs)
-simpson.m2=glm(simpson~time+locality+source+dust, data=MetaObs,family=Gamma(link = "log"))
-simpson.m3=glm(simpson~locality+time+source*dust, data = MetaObs,family = Gamma(link="log"))
+simpson.m1=lm(simpson ~ time + locality +source+dust, data=MetaOne)
+simpson.m2=glm(simpson~time+locality+source+dust, data=MetaOne,family=Gamma(link = "log"))
+simpson.m3=glm(simpson~locality+time+source*dust, data = MetaOne,family = Gamma(link="log"))
 
 # Diagnostics
 plot(simpson.m1)
@@ -143,18 +162,18 @@ simpson.anova=anova(simpson.m3, test= "Chisq")
 par(mfrow=c(1,2))
 
 # Actually, let's plot the model predictions.
-plot(MetaObs$dust, fitted(shannon.m3), xlab="Dust concentration")
-boxplot(fitted(shannon.m3) ~ MetaObs$source, xlab="Source of isolation")
+# plot(MetaOne$dust, fitted(shannon.m3), xlab="Dust concentration")
+boxplot(fitted(shannon.m3) ~ MetaOne$source, xlab="Source of isolation")
 
 #### Fishers alpha log-series: do we really need this?
 hist(Fisheralpha)
-Fisheralpha.m=glm(Fisheralpha~time+source*dust+locality, data= MetaObs)
+Fisheralpha.m=glm(Fisheralpha~time+source*dust+locality, data= MetaOne)
 
 par(mfrow=c(2,2))
 plot(Fisheralpha.m)
 
 Fisher.summary=summary(Fisheralpha.m)
-fisher.anova=anova(Fisheralpha.m)
+fisher.anova=anova(Fisheralpha.m, test="Chisq")
 
 ###Final models:
 ### I changed the order of the factors in the model and it did not really change the results and these three
@@ -172,16 +191,16 @@ shan.eff.sum = summary(shannon.effect)
 
 # Adapt this for richness and simpson
 par(mfrow=c(1,3), mar = c(5,3,2,1))
-for (i in levels(MetaObs$source)) {
-  plot(c(min(MetaObs$dust), max(MetaObs$dust)),
+for (i in levels(MetaOne$source)) {
+  plot(c(min(MetaOne$dust), max(MetaOne$dust)),
        c(min(shan.eff.sum$lower[i,]), max(shan.eff.sum$upper[i,])), 
        type="n", xlab = paste(i), ylab = "")
-  lines(c(min(MetaObs$dust), max(MetaObs$dust)),
+  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
         c(min(shan.eff.sum$effect[i,]), max(shan.eff.sum$effect[i,])))
-  lines(c(min(MetaObs$dust), max(MetaObs$dust)),
+  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
         c(min(shan.eff.sum$lower[i,]), max(shan.eff.sum$lower[i,])), 
         lty="dashed")
-  lines(c(min(MetaObs$dust), max(MetaObs$dust)),
+  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
         c(min(shan.eff.sum$upper[i,]), max(shan.eff.sum$upper[i,])),
         lty="dashed")
 }
@@ -203,85 +222,86 @@ for (i in levels(MetaObs$source)) {
 # ## Add Lomolino model using argument 'add'
 # plot(acumodel, add = TRUE, col=2, lwd=2)
 
-#### Define core species:
-## Summarize reads
-funTotCount = apply(fun.abun0,2,sum)
-
-## The average read number of OTUs
-funMeanCount=apply(fun.abun0,2,function(vec) mean(vec[vec>0]))
-
-## In how many samples is an OTU present?
-funTotPresent = apply(fun.abun0,2,function(vec) sum(vec>0))
-
-## The highest read number of an OTU in a sample
-funMaxCount=apply(fun.abun0,2,max)
-
-## Plotting incidence against abundance
-plot(funTotPresent,funMaxCount, xlab="Incidence",
-     ylab="Maximum Abundance", pch=20)
-
-plot(funTotPresent, log(funMaxCount), xlab="Incidence",
-     ylab="log(Maximum Abundance)", pch=20)
-
-## Create a smoothed trendline
-funGam1 = gam(log(funMaxCount)~s(funTotPresent))
-
-plot(funGam1, residuals=T, shade=T, rug=F, cex=2.6,
-     xlab="Incidence", ylab="logMean Abundance") # , xaxp=c(0,150,15)
-
-## keep core OTUs
-
-funFreq = funTotPresent > 15
-Corfun= fungal.abundance[,funFreq]
-length(Corfun)
-Corname = colnames(Corfun)
-corsamplename=row.names(Corfun)
-
-## Core OTUs in leaf, branch and dust?
-
-
-## Core OTUs in each locality?
-
-
-## Core OTUs in each sampling time?
-
-
-
-
-### Visualize differences in community composition
-## run NMDS
-#MDS.all <- metaMDS(Corfun)
-#MDS.all <- metaMDS(Corfun, previous = MDS.all)
-#NMDS1=metaMDS(Corfun,k=2)
-
-### Trying to fix the error!!!
-#Corfun0=Corfun[abun0,]
-#csum<-colSums(Corfun0)
-#any(is.na(csum))
-#which(is.na(csum))
-
-### try to delete the rows with zero
-rowCount=apply(Corfun, 1,FUN=sum)
-nozero=rowCount>0
-Corfun0=Corfun[nozero,]
-colnames(Corfun0)
-row.names(Corfun0)
-metacor0=my.metadata[nozero,]
-row.names(Corfun0)==row.names(metacor0)
+# #### Define core species:
+# ## Summarize reads
+# funTotCount = apply(fun.abun0,2,sum)
+# 
+# ## The average read number of OTUs
+# funMeanCount=apply(fun.abun0,2,function(vec) mean(vec[vec>0]))
+# 
+# ## In how many samples is an OTU present?
+# funTotPresent = apply(fun.abun0,2,function(vec) sum(vec>0))
+# 
+# ## The highest read number of an OTU in a sample
+# funMaxCount=apply(fun.abun0,2,max)
+# 
+# ## Plotting incidence against abundance
+# plot(funTotPresent,funMaxCount, xlab="Incidence",
+#      ylab="Maximum Abundance", pch=20)
+# 
+# plot(funTotPresent, log(funMaxCount), xlab="Incidence",
+#      ylab="log(Maximum Abundance)", pch=20)
+# 
+# ## Create a smoothed trendline
+# funGam1 = gam(log(funMaxCount)~s(funTotPresent))
+# 
+# plot(funGam1, residuals=T, shade=T, rug=F, cex=2.6,
+#      xlab="Incidence", ylab="logMean Abundance") # , xaxp=c(0,150,15)
+# 
+# ## keep core OTUs
+# 
+# funFreq = funTotPresent > 15
+# Corfun= fungal.abundance[,funFreq]
+# length(Corfun)
+# Corname = colnames(Corfun)
+# corsamplename=row.names(Corfun)
+# 
+# ## Core OTUs in leaf, branch and dust?
+# 
+# 
+# ## Core OTUs in each locality?
+# 
+# 
+# ## Core OTUs in each sampling time?
+# 
+# 
+# 
+# 
+# ### Visualize differences in community composition
+# ## run NMDS
+# #MDS.all <- metaMDS(Corfun)
+# #MDS.all <- metaMDS(Corfun, previous = MDS.all)
+# #NMDS1=metaMDS(Corfun,k=2)
+# 
+# ### Trying to fix the error!!!
+# #Corfun0=Corfun[abun0,]
+# #csum<-colSums(Corfun0)
+# #any(is.na(csum))
+# #which(is.na(csum))
+# 
+# ### try to delete the rows with zero
+# rowCount=apply(Corfun, 1,FUN=sum)
+# nozero=rowCount>0
+# Corfun0=Corfun[nozero,]
+# colnames(Corfun0)
+# row.names(Corfun0)
+# metacor0=my.metadata[nozero,]
+# row.names(Corfun0)==row.names(metacor0)
 
 ### try to do the NMDS with the new matrix
 
-NMDS1<-metaMDS(Corfun0)
-NMDS1<-metaMDS(Corfun0, previous= NMDS1)
+NMDS1<-metaMDS(fungl.abun.not.zero)
+NMDS1<-metaMDS(fungl.abun.not.zero, previous= NMDS1)
 
 ### yes its working :) .
+# But it is actually not much converging yet...
 
 ### ploting the NMDS:
 ## plot NMDS
-par(mar=c(4,4,1,1))
+par(mar=c(4,4,1,1), mfrow=c(1,1))
 plot(NMDS1)
 plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2")
-ordispider(NMDS1,metacor0$source, col="grey")
+ordispider(NMDS1,MetaRich$source, col="grey")
 points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
 mylegend = legend(2, 1.5, c("leaf","branch","dust"), 
                   fill=c("green","orange","blue"), border="white", bty="n")
