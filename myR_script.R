@@ -384,7 +384,9 @@ legend(0.8,-0.7, legend = levels(MetaOrd$source), cex = .8, pch=19,
 # if there is more dust, while some species abundance goes DOWN in branches 
 # if there is more dust.
 # Probably it is a good idea to do an effect plot for each species,
-# similarly to the shannon effect plots above.
+# similarly to the shannon effect plots above. This will give you the 
+# species that have interesting reactions to dust concentration in the 
+# branch and the dust itself.
 ordisurf(ModelOrd$lv.median, MetaOrd$dust, add=T)
 
 # The NMDS will not be necessary anymore. If you run the two lines below, 
