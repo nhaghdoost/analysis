@@ -2,10 +2,113 @@
 ## Pakages we need for our project
 library(mvabund)
 library(vegan)
+library(coda)
+library(rjags)
 library(boral)
 # library(mgcv)
 library(effects)
-# Data input
+##################################
+##################################
+##### 1- Isolation success analysis:
+## Isolation success data input
+MyAbund = read.csv(file="morphotype_matrix_incubator.csv", 
+                   header = T, row.names = 1)
+MetaData = read.csv(file="metadata.csv", header = T, row.names = 1)
+# you write out tables with the write.csv command. Check the helpfile with ?write.csv
+# are the rownames matching?
+rownames(MyAbund) == rownames(MetaData)
+
+# Isolation success
+IsolSucc = apply(MyAbund,1, sum)
+
+# Combine with the rest of the metadata
+MetaData = cbind(MetaData, success = IsolSucc)
+
+# Re-arrange the order of the factor predictors. branches and dust are compared to leaves.
+MetaData$source <- factor(MetaData$source, levels = c("Leaf", "Branch", "Dust"))
+MetaData$time <- factor(MetaData$time, levels = c("1", "2", "3"))
+
+# Sample names:
+# B1T1L1:
+# B: locality of collection (B = Bisoton)
+# 1: sampling time 1
+# T1: the code of the tree at that site 
+# L1: leaf 1 of that tree (can be B=branch, D=dust)
+
+# Some data properties
+table(MetaData$locality, MetaData$time)
+table(MetaData$locality, MetaData$source)
+table(MetaData$time, MetaData$source)
+table(MetaData$tree, MetaData$source)
+table(MetaData$tree, MetaData$time)
+table(MetaData$tree, MetaData$source)
+table(MetaData$success, MetaData$source)
+
+# Continuous variables
+hist(MetaData$success, nclass=20)
+summary(MetaData$success)
+hist(MetaData$dust, xlab="Dust (mg/cm2)")
+
+# Some simple plots
+# Time?
+boxplot(MetaData$success ~ MetaData$time)
+# Locality and dust quantity
+boxplot(MetaData$dust ~ MetaData$locality)
+# Dust and sampling time
+boxplot(MetaData$dust ~ MetaData$time)
+# Dust quantity at localities at different times
+boxplot(MetaData$dust[MetaData$time == 1] ~ 
+          MetaData$locality[MetaData$time == 1])
+boxplot(MetaData$dust[MetaData$time == 2] ~ 
+          MetaData$locality[MetaData$time == 2])
+boxplot(MetaData$dust[MetaData$time == 3] ~ 
+          MetaData$locality[MetaData$time == 3])
+
+# Q1: Dust deposition and isolation success
+plot(MetaData$dust, MetaData$success, xlab=c("Dust (mg/cm2)"), 
+         ylab=c("Isolation success"))
+
+# Q2: Locality and isolation success
+boxplot(MetaData$success ~ MetaData$locality, 
+        ylab="Isolation success")
+
+# Q4: Source of isolation
+boxplot(MetaData$success ~ MetaData$source)
+
+# different 
+par(mar = c(12,4,3,1))
+boxplot(MetaData$success ~ MetaData$locality*MetaData$source, 
+        las=2)
+dev.off()
+
+# Models of culturing success
+
+success.m1 = glm(success ~ time + locality + source + dust, data=MetaData, family = poisson(link = "log"))
+summary(success.m1)
+anova(success.m1, test="LRT")
+plot(success.m1)
+
+### interaction model
+success.m2=glm(success~locality+time+source*dust, data=MetaData, family = poisson(link = "log"))
+success.sammary=summary(success.m2)
+success.anova=anova(success.m2, test="LRT")
+plot(success.m2)
+
+## plot the interaction
+library(effects)
+plot(effect("source:dust",success.m2 ,  multiline=TRUE))
+
+AIC(success.m1)
+AIC(success.m2)
+## based on this the m2 model is better for describing our data
+
+# Coefficients and 95% confidence intervals
+Effs = cbind(Coefficients = coefficients(success.m2), confint(success.m2))
+
+###########################
+###########################
+#### 2- Diversity analysis:
+### Diversity Data input
 
 fungal.abundance= read.csv(file = "morphotype_matrix_incubator.csv", header = T, sep=",", row.names = 1)
 my.metadata=read.csv(file = "metadata.csv",header = T, sep = ",",row.names = 1)
@@ -19,7 +122,7 @@ Source = factor(my.metadata$source, levels = c("Leaf", "Branch", "Dust"))
 my.metadata$time<-factor(my.metadata$time, levels = c("1","2","3"))
 #dust=(my.metadata$dust)
 
-# Richness (Species number) model
+#### Richness (Species number) model
 # I removed the zero-observation samples.
 Richness = apply(fungal.abundance,1,function(vec) sum(vec>0))
 hist(log(Richness))
@@ -36,31 +139,31 @@ hist(RichnessNotZero)
 MetaRich = my.metadata[RichNotZero,]
 MetaRich$time<-factor(MetaRich$time, levels = c("1","2","3"))
 
-# Change plotting parameters, so all diagnostic plots are on the same sheet
-par(mfrow=c(2,2))
+## fitting the models for Richness
 
 Richness.m1=lm(RichnessNotZero~time+locality+source*dust, data = MetaRich)
-plot(Richness.m1) 
-# This is a model diagnostic plot.
-# summary(Richness.m1)
-
 Richness.m2=glm(RichnessNotZero~time+locality+source+dust, data = MetaRich, 
                 family=poisson(link = "log"))
-plot(Richness.m2)
-# summary(Richness.m2)
-
 Richness.m3= glm(RichnessNotZero~locality+time+source*dust, data = MetaRich, 
                  family=poisson(link = "log"))
-plot(Richness.m3) # this model is still quite crappy, but no idea what else to include.
-
+ 
+# model diagnostic plots
+# Change plotting parameters, so all diagnostic plots are on the same sheet
+par(mfrow=c(2,2))
+plot(Richness.m1)
+plot(Richness.m2)
+plot(Richness.m3)
+# summary(Richness.m1)
+# summary(Richness.m2)
+# summary(Richness.m3)
 # Look for the AICs: Akaike Information Criteria and model selection
 AIC(Richness.m1)
 AIC(Richness.m2)
 AIC(Richness.m3)
-# The AIC says that the simple linear model is the best fit 
+# The AIC says that the simple linear model (m1) is the best fit 
 # (although still crappy according to the diagnostic plot)
 
-# Evaluations
+### Richness Model Evaluations
 Richness.m1.anova=anova(Richness.m1, test="Chisq")
 Richness.m1.summary=summary(Richness.m1)
 
@@ -69,7 +172,23 @@ par(mfrow=c(1,1))
 boxplot(fitted(Richness.m1) ~ MetaRich$source, xlab="Source", ylab="Richness")
 # Richness in branch and dust similar, but richness stat. sign. lower in leaf
 
-# Put the interaction plots here:
+# Interaction plots:
+Richness.effect = effect("source:dust",Richness.m1,multiline=TRUE,  ylim=c(-10,10))
+Rich.eff.sum = summary(Richness.effect)
+
+par(mfrow=c(1,3), mar = c(5,3,2,1))
+for (i in levels(MetaOne$source)) {
+  plot(c(min(MetaOne$dust), max(MetaOne$dust)),
+       c(min(Rich.eff.sum$lower[i,]), max(Rich.eff.sum$upper[i,])), 
+       type="n", xlab = paste(i), ylab = "")
+  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
+        c(min(Rich.eff.sum$effect[i,]), max(Rich.eff.sum$effect[i,])))
+  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
+        c(min(Rich.eff.sum$lower[i,]), max(Rich.eff.sum$lower[i,])), 
+        lty="dashed")
+  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
+        c(min(Rich.eff.sum$upper[i,]), max(Rich.eff.sum$upper[i,])),
+        lty="dashed")}
 
 #### Shannon and Simpson models.
 #abun0=Richness>0
@@ -98,13 +217,12 @@ hist(log(simpson))
 ## Fishers alpha log-series
 # Check what Fisher's alpha means. 
 # You get very high values with only a few species observations.
-Fisheralpha= fisher.alpha(fungl.abun.not.one)
-hist(Fisheralpha)
-
+#Fisheralpha= fisher.alpha(fungl.abun.not.one)
+#hist(Fisheralpha)
 ## Evenness
-RichnessMinTwo = Richness[Richness > 1]
-Evenness= shannon/log(RichnessMinTwo)
-hist(Evenness)
+#RichnessMinTwo = Richness[Richness > 1]
+#Evenness= shannon/log(RichnessMinTwo)
+#hist(Evenness)
 
 ## Shannon models: let's fit all of them first
 shannon.m1=lm(shannon ~ locality+time +source+dust, data=MetaOne)
@@ -132,6 +250,23 @@ AIC(shannon.m3)
 shannon.summary=summary(shannon.m3) 
 shannon.anova=anova(shannon.m3, test = "Chisq")
 
+# Interaction plots:
+shannon.effect = effect("source:dust",shannon.m3,multiline=TRUE,  ylim=c(-10,10))
+shan.eff.sum = summary(shannon.effect)
+
+par(mfrow=c(1,3), mar = c(5,3,2,1))
+for (i in levels(MetaOne$source)) {
+  plot(c(min(MetaOne$dust), max(MetaOne$dust)),
+       c(min(shan.eff.sum$lower[i,]), max(shan.eff.sum$upper[i,])), 
+       type="n", xlab = paste(i), ylab = "")
+  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
+        c(min(shan.eff.sum$effect[i,]), max(shan.eff.sum$effect[i,])))
+  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
+        c(min(shan.eff.sum$lower[i,]), max(shan.eff.sum$lower[i,])), 
+        lty="dashed")
+  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
+        c(min(shan.eff.sum$upper[i,]), max(shan.eff.sum$upper[i,])),
+        lty="dashed")}
 ### I tried changing the order of the factors in the model and it doesn't really change anything. the model m3 is
 ###the best model describing our data
 
@@ -159,137 +294,51 @@ AIC(simpson.m3)
 simpson.summary=summary(simpson.m3)
 simpson.anova=anova(simpson.m3, test= "Chisq")
 
-#### Plot effects
-par(mfrow=c(1,2))
+# Interaction plots:
+simpson.effect = effect("source:dust",simpson.m3,multiline=TRUE,  ylim=c(-10,10))
+Simp.eff.sum = summary(simpson.effect)
 
+par(mfrow=c(1,3), mar = c(5,3,2,1))
+for (i in levels(MetaOne$source)) {
+  plot(c(min(MetaOne$dust), max(MetaOne$dust)),
+       c(min(Simp.eff.sum$lower[i,]), max(Simp.eff.sum$upper[i,])), 
+       type="n", xlab = paste(i), ylab = "")
+  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
+        c(min(Simp.eff.sum$effect[i,]), max(Simp.eff.sum$effect[i,])))
+  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
+        c(min(Simp.eff.sum$lower[i,]), max(Simp.eff.sum$lower[i,])), 
+        lty="dashed")
+  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
+        c(min(Simp.eff.sum$upper[i,]), max(Simp.eff.sum$upper[i,])),
+        lty="dashed")}
 # Actually, let's plot the model predictions.
-# plot(MetaOne$dust, fitted(shannon.m3), xlab="Dust concentration")
+#plot(MetaOne$dust, fitted(shannon.m3), xlab="Dust concentration")
+par(mfrow =c(1,1))
+boxplot(fitted(Richness.m1) ~ MetaRich$source, xlab="Source of isolation", ylab="Richness")
+## why the ylab doesn't work here?
 boxplot(fitted(shannon.m3) ~ MetaOne$source, xlab="Source of isolation")
+boxplot(fitted(simpson.m3) ~ MetaOne$source, xlab="Source of isolation")
 
 #### Fishers alpha log-series: do we really need this?
-hist(Fisheralpha)
-Fisheralpha.m=glm(Fisheralpha~time+source*dust+locality, data= MetaOne)
+## Family for this model?
+#hist(Fisheralpha)
+#Fisheralpha.m=glm(Fisheralpha~time+source*dust+locality, data= MetaOne)
 
-par(mfrow=c(2,2))
-plot(Fisheralpha.m)
+#par(mfrow=c(2,2))
+#plot(Fisheralpha.m)
 
-Fisher.summary=summary(Fisheralpha.m)
-fisher.anova=anova(Fisheralpha.m, test="Chisq")
+#Fisher.summary=summary(Fisheralpha.m)
+#fisher.anova=anova(Fisheralpha.m, test="Chisq")
 
 ###Final models:
 ### I changed the order of the factors in the model and it did not really change the results and these three
 ### models are final
-# Richness.m3= glm(Richness~locality+ time +source*dust, data = my.metadata, family=poisson(link = "log"))
+# Richness.m1=lm(RichnessNotZero~time+locality+source*dust, data = MetaRich)
 # shannon.m3=glm(shannon~locality+time+source*dust, data=MetaObs, family=Gamma(link="log"))
 # simpson.m3=glm(simpson~locality+time+source*dust, data = MetaObs,family = Gamma(link="log"))
 
-####source*dust interactions plot
-# library(effects)
-# plot(effect("source:dust", Richness.m3, multiline=TRUE, ylim=c(0,1)))
 
-shannon.effect = effect("source:dust",shannon.m3,multiline=TRUE,  ylim=c(-10,10))
-shan.eff.sum = summary(shannon.effect)
-
-# Adapt this for richness and simpson
-par(mfrow=c(1,3), mar = c(5,3,2,1))
-for (i in levels(MetaOne$source)) {
-  plot(c(min(MetaOne$dust), max(MetaOne$dust)),
-       c(min(shan.eff.sum$lower[i,]), max(shan.eff.sum$upper[i,])), 
-       type="n", xlab = paste(i), ylab = "")
-  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
-        c(min(shan.eff.sum$effect[i,]), max(shan.eff.sum$effect[i,])))
-  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
-        c(min(shan.eff.sum$lower[i,]), max(shan.eff.sum$lower[i,])), 
-        lty="dashed")
-  lines(c(min(MetaOne$dust), max(MetaOne$dust)),
-        c(min(shan.eff.sum$upper[i,]), max(shan.eff.sum$upper[i,])),
-        lty="dashed")
-}
-
-# ##### Species Accumulation Curves
-# acum=specaccum(fungal.abundance,method = "exact", permutations = 100,
-#           conditioned =TRUE, gamma = "jack1",  w = NULL)
-# plot(acum)
-# plot(acum, add = FALSE, random = FALSE, ci = 0, 
-#      ci.type = c("line"), col = "black",xlab = "Number of samples" , ylab = "Richness"
-#      , xvar = c("sites", "individuals", "effort"),ylim )
-# 
-# ## Fit Lomolino model to the exact accumulation
-# acumodel=fitspecaccum(acum, "lomolino")
-# coef(acumodel)
-# fitted(acumodel)
-# plot(acum,random = FALSE, ci = 0,ci.type = c("line"),xlab = "Number of samples" , ylab = "Richness")
-# 
-# ## Add Lomolino model using argument 'add'
-# plot(acumodel, add = TRUE, col=2, lwd=2)
-
-# #### Define core species:
-# ## Summarize reads
-# funTotCount = apply(fun.abun0,2,sum)
-# 
-# ## The average read number of OTUs
-# funMeanCount=apply(fun.abun0,2,function(vec) mean(vec[vec>0]))
-# 
-# ## In how many samples is an OTU present?
-# funTotPresent = apply(fun.abun0,2,function(vec) sum(vec>0))
-# 
-# ## The highest read number of an OTU in a sample
-# funMaxCount=apply(fun.abun0,2,max)
-# 
-# ## Plotting incidence against abundance
-# plot(funTotPresent,funMaxCount, xlab="Incidence",
-#      ylab="Maximum Abundance", pch=20)
-# 
-# plot(funTotPresent, log(funMaxCount), xlab="Incidence",
-#      ylab="log(Maximum Abundance)", pch=20)
-# 
-# ## Create a smoothed trendline
-# funGam1 = gam(log(funMaxCount)~s(funTotPresent))
-# 
-# plot(funGam1, residuals=T, shade=T, rug=F, cex=2.6,
-#      xlab="Incidence", ylab="logMean Abundance") # , xaxp=c(0,150,15)
-# 
-# ## keep core OTUs
-# 
-# funFreq = funTotPresent > 15
-# Corfun= fungal.abundance[,funFreq]
-# length(Corfun)
-# Corname = colnames(Corfun)
-# corsamplename=row.names(Corfun)
-# 
-# ## Core OTUs in leaf, branch and dust?
-# 
-# 
-# ## Core OTUs in each locality?
-# 
-# 
-# ## Core OTUs in each sampling time?
-# 
-# 
-# 
-# 
-# ### Visualize differences in community composition
-# ## run NMDS
-# #MDS.all <- metaMDS(Corfun)
-# #MDS.all <- metaMDS(Corfun, previous = MDS.all)
-# #NMDS1=metaMDS(Corfun,k=2)
-# 
-# ### Trying to fix the error!!!
-# #Corfun0=Corfun[abun0,]
-# #csum<-colSums(Corfun0)
-# #any(is.na(csum))
-# #which(is.na(csum))
-# 
-# ### try to delete the rows with zero
-# rowCount=apply(Corfun, 1,FUN=sum)
-# nozero=rowCount>0
-# Corfun0=Corfun[nozero,]
-# colnames(Corfun0)
-# row.names(Corfun0)
-# metacor0=my.metadata[nozero,]
-# row.names(Corfun0)==row.names(metacor0)
-
-# Model-based ordination
+#### Model-based ordination
 
 # Remove species present in only one sample
 CountInSample = apply(fungl.abun.not.zero,2,sum)
@@ -303,7 +352,7 @@ MetaOrd = MetaRich[rownames(MetaRich) %in% rownames(fung.abun.reduced),]
 # not working
 ModelOrd <- boral(fung.abun.reduced, family = "negative.binomial", num.lv = 2, 
                   n.burnin = 10, n.iteration = 100, n.thin = 1)
-
+##### I didn't get this ERROR!!!
 # Error message: MCMC fitting through JAGS failed. This is likely due to the
 # prior on the dispersion (size) parameter of the negative binomial distribution
 # been too uninformative (see below). Please consider a tougher prior or switch
@@ -319,11 +368,30 @@ ModelOrd <- boral(fung.abun.reduced, family = "negative.binomial", num.lv = 2,
 # title(main="Untransformed data")
 
 ## model diagnostics
-plot(ModelOrd, ask = FALSE, mfrow = c(2,2))
+par(mfrow = c(2,2))
+plot(ModelOrd, ask = FALSE )
 
 # Ordination plot. Please make it similar as the NMDS.
+dev.off()
 plot(ModelOrd$lv.median, col=as.numeric(MetaOrd$source), 
      pch=19, main="Latent variable model", las=1)
+### Why this plot is different from NMDS?
+### this is as far as I checked today. I have a problem with visualixation of this BORAL ordination model...
+lvsplot(ModelOrd, jitter = TRUE, biplot = TRUE,  cex=exp(2*shannon)/100, col=as.numeric(MetaOrd$source)
+        ,main="Latent variable model", las=1)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # The NMDS will not be necessary anymore. If you run the two lines below, 
 # you will see how locality and dispersal are mixed up because of the overdispersion.
@@ -332,186 +400,10 @@ NMDS1<-metaMDS(fung.abun.reduced)
 plot(NMDS1$points, ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2", 
      col=as.numeric(MetaOrd$source), pch=19)
 
-# ### ploting the NMDS:
-# ## plot NMDS
-# par(mar=c(4,4,1,1), mfrow=c(1,1))
-# # plot(NMDS1)
-# plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2", 
-#      col=as.numeric(MetaOrd$source))
-# ordispider(NMDS1,MetaRich$source, col="grey")
-# points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
-# mylegend = legend(2, 1.5, c("leaf","branch","dust"), 
-#                   fill=c("green","orange","blue"), border="white", bty="n")
-# with(metacor0,ordiellipse(NMDS1, metacor0$source,cex=.5, 
-#                           draw="polygon", col=c("green"),
-#                           alpha=100,kind="se",conf=0.95, 
-#                           show.groups=(c("Leaf"))))
-# with(metacor0,ordiellipse(NMDS1, metacor0$source,cex=.5, 
-#                              draw="polygon", col=c("orange"),
-#                              alpha=100,kind="se",conf=0.95, 
-#                              show.groups=(c("Branch"))))
-# with(my.metadata,ordiellipse(NMDS1, metacor0$source,cex=.5, 
-#                              draw="polygon", col=c("blue"),
-#                              alpha=100,kind="se",conf=0.95, 
-#                              show.groups=(c("Dust"))))
-# # show overlapping samples
-# ordiplot(NMDS1, type="text")
-# ordispider(NMDS1, metacor0$source , col="grey")
-# ## Three axes
-# NMDS.3 <- metaMDS(Corfun0, k=3, trymax=100)
-# NMDS.3 <- metaMDS(Corfun0, previous = NMDS.3, k=3, trymax=100)
-# 
-# 
-# ### Axes 1 & 2
-# ### why did we use shannon???
-# png(file="community_NMDS_1-2.jpeg", units="mm", height=60, width=180, 
-#     pointsize=10, bg="white", res=1200)
-# par(mfrow=c(1,3))
-# par(mar=c(4,4,1,1))
-# NMDS.1.2 = ordiplot(NMDS.3, choices=c(1,2), type="n", 
-#                        xlab="NMDS1", ylab="NMDS2")
-# ordispider(NMDS.1.2,metacor0$source, col="grey")
-# points(NMDS.3$points[,1], NMDS.3$points[,2], pch=20, 
-#        cex=exp(2*shannon)/100,col="gray")
-# ordiellipse(NMDS.1.2, metacor0$source,cex=.5, 
-#             draw="polygon", col=c("green"),
-#             alpha=100,kind="se",conf=0.95, 
-#             show.groups=(c("Leaf")), border="green")
-# ordiellipse(NMDS.1.2, metacor0$source,cex=.5, 
-#             draw="polygon", col=c("orange"),
-#             alpha=100,kind="se",conf=0.95,
-#             show.groups=(c("Branch")), border="orange")
-# ordiellipse(NMDS.1.2, metacor0$source,cex=.5, 
-#             draw="polygon", col=c("gray"),
-#             alpha=50,kind="se",conf=0.95,
-#             show.groups=(c("Dust")), border="black")
-# 
-# ### Axes 1 & 3
-# 
-# png(file="community_NMDS_1-3.jpeg", units="mm", height=60, width=180, 
-#     pointsize=10, bg="white", res=1200)
-# par(mfrow=c(1,3))
-# par(mar=c(4,4,1,1))
-# NMDS.1.3 = ordiplot(NMDS.3, choices=c(1,3), type="n", 
-#                     xlab="NMDS1", ylab="NMDS3")
-# ordispider(NMDS.1.3,metacor0$source, col="grey")
-# points(NMDS.3$points[,1], NMDS.3$points[,3], pch=20, 
-#        cex=exp(2*shannon)/100,col="gray")
-# ordiellipse(NMDS.1.3, metacor0$source,cex=.5, 
-#             draw="polygon", col=c("green"),
-#             alpha=100,kind="se",conf=0.95, 
-#             show.groups=(c("Leaf")), border="green")
-# ordiellipse(NMDS.1.3, metacor0$source,cex=.5, 
-#             draw="polygon", col=c("orange"),
-#             alpha=100,kind="se",conf=0.95,
-#             show.groups=(c("Branch")), border="orange")
-# ordiellipse(NMDS.1.3, metacor0$source,cex=.5, 
-#             draw="polygon", col=c("gray"),
-#             alpha=50,kind="se",conf=0.95,
-#             show.groups=(c("Dust")), border="black")
-# 
-# ### Axes 2 & 3
-# 
-# png(file="community_NMDS_2-3.jpeg", units="mm", height=60, width=180, 
-#     pointsize=10, bg="white", res=1200)
-# par(mfrow=c(1,3))
-# par(mar=c(4,4,1,1))
-# NMDS.2.3 = ordiplot(NMDS.3, choices=c(2,3), type="n", 
-#                     xlab="NMDS2", ylab="NMDS3")
-# ordispider(NMDS.2.3,metacor0$source, col="grey")
-# points(NMDS.3$points[,2], NMDS.3$points[,3], pch=20, 
-#        cex=exp(2*shannon)/100,col="gray")
-# ordiellipse(NMDS.2.3, metacor0$source,cex=.5, 
-#             draw="polygon", col=c("green"),
-#             alpha=100,kind="se",conf=0.95, 
-#             show.groups=(c("Leaf")), border="green")
-# ordiellipse(NMDS.2.3, metacor0$source,cex=.5, 
-#             draw="polygon", col=c("orange"),
-#             alpha=100,kind="se",conf=0.95,
-#             show.groups=(c("Branch")), border="orange")
-# ordiellipse(NMDS.2.3, metacor0$source,cex=.5, 
-#             draw="polygon", col=c("gray"),
-#             alpha=50,kind="se",conf=0.95,
-#             show.groups=(c("Dust")), border="black")
-# 
-# ## PCA
-# fun.pca = rda(Corfun0)
-# fun.pca.scores = scores(fun.pca, choices=c(1,2,3))
-# fun.pca.eigenvals = eigenvals(fun.pca)
-# 
-# ## explained by the first three axes: 52%
-# (fun.pca.eigenvals[1] + fun.pca.eigenvals[2] + fun.pca.eigenvals[3])/sum(fun.pca.eigenvals)
-# 
-# ## axis distributions
-# fun.pca1 = fun.pca.scores$sites[,1]
-# fun.pca2 = fun.pca.scores$sites[,2]
-# fun.pca3 = fun.pca.scores$sites[,3]
-# 
-# hist(fun.pca1^2)
-# hist(fun.pca2^2)
-# hist(fun.pca3^2)
-# 
-# ## dynamic 3D ordination plot
-# 
-# library(vegan3d)
-# ordirgl(NMDS.3)
-# orglspider(NMDS.3, metacor0$source)
-# orgltext(NMDS.3, rownames(Corfun0))
-# orgltext(NMDS.3, colnames(Corfun0))
-# 
-# ### NMDS plot for localities: 
-# par(mar=c(4,4,1,1))
-# plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2")
-# ordispider(NMDS1, metacor0$locality , col="grey")
-# points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
-# mylegend2= legend(2, 1.5, c("BISOTON","HASAN ABAD","KHOSRO ABAD", "KEREND", "SORKHE DIZE"), 
-#                   fill=c("green","orange","yellow","red","blue"), border="white", bty="n")
-# with(metacor0,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
-#                           draw="polygon", col=c("green"),
-#                           alpha=100,kind="se",conf=0.95, 
-#                           show.groups=(c("BISOTON"))))
-# with(metacor0,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
-#                           draw="polygon", col=c("orange"),
-#                           alpha=100,kind="se",conf=0.95, 
-#                           show.groups=(c("HASAN ABAD"))))
-# with(my.metadata,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
-#                              draw="polygon", col=c("yellow"),
-#                              alpha=100,kind="se",conf=0.95, 
-#                              show.groups=(c("KHOSRO ABAD"))))
-# with(my.metadata,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
-#                              draw="polygon", col=c("red"),
-#                              alpha=100,kind="se",conf=0.95, 
-#                              show.groups=(c("KEREND"))))
-# with(my.metadata,ordiellipse(NMDS1, metacor0$locality,cex=.5, 
-#                              draw="polygon", col=c("blue"),
-#                              alpha=100,kind="se",conf=0.95, 
-#                              show.groups=(c("SORKHE DIZE"))))
-# 
-# ### NMDS plot for time of sampling
-# par(mar=c(4,4,1,1))
-# plot(NMDS1$points, type="n", ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2")
-# ordispider(NMDS1, metacor0$time , col="grey")
-# points(NMDS1, pch=20, cex=exp(2*shannon)/100, col="grey")
-# 
-# mylegend3= legend(2, 1.5, c("First sampling","Second sampling","Third sampling"), 
-#                   fill=c("green","orange","blue"), border="white", bty="n")
-# with(metacor0,ordiellipse(NMDS1, metacor0$time,cex=.5, 
-#                           draw="polygon", col=c("green"),
-#                           alpha=100,kind="se",conf=0.95, 
-#                           show.groups=(c("1"))))
-# with(metacor0,ordiellipse(NMDS1, metacor0$time,cex=.5, 
-#                           draw="polygon", col=c("orange"),
-#                           alpha=100,kind="se",conf=0.95, 
-#                           show.groups=(c("2"))))
-# with(my.metadata,ordiellipse(NMDS1, metacor0$time,cex=.5, 
-#                              draw="polygon", col=c("blue"),
-#                              alpha=100,kind="se",conf=0.95, 
-#                              show.groups=(c("3"))))
 
 
 
-
-### Community composition models
+### 3- Community composition models
 
 png(file="mean-variance-plot.jpeg", units="mm", height=90, width=90, 
     pointsize=10, bg="white", res=1200)
