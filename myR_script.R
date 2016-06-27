@@ -5,7 +5,7 @@ library(vegan)
 library(coda)
 library(rjags)
 library(boral)
-# library(mgcv)
+#library(mgcv)
 library(effects)
 ##################################
 ##################################
@@ -372,25 +372,31 @@ plot(ModelOrd, ask = FALSE )
 
 # Ordination plot. Please make it similar as the NMDS.
 dev.off()
-plot(ModelOrd$lv.median, col=as.numeric(MetaOrd$source), 
-     pch=19, main="Latent variable model", las=1)
+par(mar=c(4,4,4,4))
+ordibora= ordiplot(ModelOrd$lv.median,xlim = c(-1.5 , 1.5), choices = c(1,2), type = "points", cex =0.5 
+         ,display = "sites" )
+points(ordibora,"sites", pch=20 ,col=as.numeric(MetaOrd$source), xlim = c(-1.5 , 1.5), cex =0.5 )
+ordispider(ordibora,MetaOrd$source, col= "gray" )
+mylegend = legend(1, 1, c("Leaf","Branch","Dust"), 
+                  fill=c("green","orange","blue"), border="white", bty="n")
+with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
+                          draw="polygon", col=c("green"),
+                          alpha=100,kind="se",conf=0.95, 
+                          show.groups=(c("Leaf"))))
+with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
+                          draw="polygon", col=c("orange"),
+                          alpha=100,kind="se",conf=0.95,
+                          show.groups=(c("Branch")))) 
+with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
+                          draw="polygon", col=c("blue"),
+                          alpha=100,kind="se",conf=0.95,
+                          show.groups=(c("Dust"))))
+
 ### Why this plot is different from NMDS?
-### this is as far as I checked today. I have a problem with visualixation of this BORAL ordination model...
-lvsplot(ModelOrd, jitter = TRUE, biplot = TRUE,  cex=exp(2*shannon)/100, col=as.numeric(MetaOrd$source)
-        ,main="Latent variable model", las=1)
-
-
-
-
-
-
-
-
-
-
-
-
-
+dev.off()
+par(mar=c(4,4,1,1))
+plot(ModelOrd$lv.median, col=as.numeric(MetaOrd$source), 
+            pch=19, main="Latent variable model", las=1.5)
 
 # The NMDS will not be necessary anymore. If you run the two lines below, 
 # you will see how locality and dispersal are mixed up because of the overdispersion.
