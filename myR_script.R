@@ -17,7 +17,6 @@ MetaData = read.csv(file="metadata.csv", header = T, row.names = 1)
 # you write out tables with the write.csv command. Check the helpfile with ?write.csv
 # are the rownames matching?
 rownames(MyAbund) == rownames(MetaData)
-
 # Isolation success
 IsolSucc = apply(MyAbund,1, sum)
 
