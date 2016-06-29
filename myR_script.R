@@ -16,7 +16,7 @@ MyAbund = read.csv(file="morphotype_matrix_incubator.csv",
 MetaData = read.csv(file="metadata.csv", header = T, row.names = 1)
 # you write out tables with the write.csv command. Check the helpfile with ?write.csv
 # are the rownames matching?
-rownames(MyAbund) == rownames(MetaData)
+# rownames(MyAbund) == rownames(MetaData)
 # Isolation success
 IsolSucc = apply(MyAbund,1, sum)
 
@@ -34,7 +34,7 @@ MetaData$time <- factor(MetaData$time, levels = c("1", "2", "3"))
 # T1: the code of the tree at that site 
 # L1: leaf 1 of that tree (can be B=branch, D=dust)
 
-# Some data properties
+# Some data overview
 table(MetaData$locality, MetaData$time)
 table(MetaData$locality, MetaData$source)
 table(MetaData$time, MetaData$source)
@@ -85,13 +85,13 @@ dev.off()
 success.m1 = glm(success ~ time + locality + source + dust, data=MetaData, family = poisson(link = "log"))
 summary(success.m1)
 anova(success.m1, test="LRT")
-plot(success.m1)
+# plot(success.m1)
 
 ### interaction model
 success.m2=glm(success~locality+time+source*dust, data=MetaData, family = poisson(link = "log"))
 success.sammary=summary(success.m2)
 success.anova=anova(success.m2, test="LRT")
-plot(success.m2)
+# plot(success.m2)
 
 ## plot the interaction
 library(effects)
@@ -190,11 +190,6 @@ for (i in levels(MetaOne$source)) {
         lty="dashed")}
 
 #### Shannon and Simpson models.
-#abun0=Richness>0
-#fun.abun0=fungal.abundance[abun0,]
-#Meta0=my.metadata[abun0,]
-#row.names(fun.abun0)==row.names(Meta0)
-
 # Keep only samples with at least two OTUs
 RichNotOne = Richness > 1
 fungl.abun.not.one=fungal.abundance[RichNotOne,]
@@ -208,6 +203,7 @@ MetaOne$time<-factor(MetaOne$time, levels = c("1","2","3"))
 # Calculate diversity indices
 shannon = diversity(fungl.abun.not.one,index = "shannon")
 simpson = diversity(fungl.abun.not.one,index = "simpson")
+par(mfrow = c(2,2))
 hist(shannon)
 hist(simpson)
 hist(log(shannon))
@@ -312,11 +308,11 @@ for (i in levels(MetaOne$source)) {
         lty="dashed")}
 # Actually, let's plot the model predictions.
 #plot(MetaOne$dust, fitted(shannon.m3), xlab="Dust concentration")
-par(mfrow =c(1,1))
+par(mfrow =c(1,3))
 boxplot(fitted(Richness.m1) ~ MetaRich$source, xlab="Source of isolation", ylab="Richness")
 ## why the ylab doesn't work here?
-boxplot(fitted(shannon.m3) ~ MetaOne$source, xlab="Source of isolation")
-boxplot(fitted(simpson.m3) ~ MetaOne$source, xlab="Source of isolation")
+boxplot(fitted(shannon.m3) ~ MetaOne$source, xlab="Shannon")
+boxplot(fitted(simpson.m3) ~ MetaOne$source, xlab="Simpson")
 
 #### Fishers alpha log-series: do we really need this?
 ## Family for this model?
@@ -343,7 +339,7 @@ boxplot(fitted(simpson.m3) ~ MetaOne$source, xlab="Source of isolation")
 CountInSample = apply(fungl.abun.not.zero,2,sum)
 
 # I needed to remove the species that were seen in a few samples.
-fung.abun.reduced = fungl.abun.not.zero[,CountInSample > 10]
+fung.abun.reduced = fungl.abun.not.zero[,CountInSample > 3]
 fung.abun.reduced = fung.abun.reduced[apply(fung.abun.reduced,1,sum) > 0,]
 
 MetaOrd = MetaRich[rownames(MetaRich) %in% rownames(fung.abun.reduced),]
@@ -372,27 +368,28 @@ plot(ModelOrd, ask = FALSE )
 
 # Ordination plot. Please make it similar as the NMDS.
 dev.off()
-par(mar=c(4,4,4,4))
-ordibora= ordiplot(ModelOrd$lv.median,xlim = c(-1.5 , 1.5), choices = c(1,2), type = "points", cex =0.5 
-         ,display = "sites" )
-points(ordibora,"sites", pch=20 ,col=as.numeric(MetaOrd$source), xlim = c(-1.5 , 1.5), cex =0.5 )
-ordispider(ordibora,MetaOrd$source, col= "gray" )
-mylegend = legend(1, 1, c("Leaf","Branch","Dust"), 
-                  fill=c("green","orange","blue"), border="white", bty="n")
+par(mar=c(4,4,1,1))
+ordibora= ordiplot(ModelOrd$lv.median, choices = c(1,2), type = "none", cex =0.5 
+         ,display = "sites", xlim = c(-0.3,0.3))
+points(ordibora,"sites", pch=20 ,col=as.numeric(MetaOrd$source))
+# ordispider(ordibora,MetaOrd$source, col= "gray" )
+mylegend = legend(0.7, 0.9, c("Leaf","Branch","Dust"), 
+                  fill=c(3,1,2), border="white", bty="n")
 with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
-                          draw="polygon", col=c("green"),
-                          alpha=100,kind="se",conf=0.95, 
+                          draw="polygon", col=3,
+                          alpha=200,kind="se",conf=0.95, 
                           show.groups=(c("Leaf"))))
 with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
-                          draw="polygon", col=c("orange"),
-                          alpha=100,kind="se",conf=0.95,
+                          draw="polygon", col=1,
+                          alpha=150,kind="se",conf=0.95,
                           show.groups=(c("Branch")))) 
 with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
-                          draw="polygon", col=c("blue"),
-                          alpha=100,kind="se",conf=0.95,
+                          draw="polygon", col=2,
+                          alpha=200,kind="se",conf=0.95,
                           show.groups=(c("Dust"))))
 
 ### Why this plot is different from NMDS?
+# Because the NMDS plot likely has overdispersion effects.
 dev.off()
 par(mar=c(4,4,1,1))
 plot(ModelOrd$lv.median, col=as.numeric(MetaOrd$source), 
@@ -400,12 +397,12 @@ plot(ModelOrd$lv.median, col=as.numeric(MetaOrd$source),
 
 # The NMDS will not be necessary anymore. If you run the two lines below, 
 # you will see how locality and dispersal are mixed up because of the overdispersion.
-# This is very strong for the green samples (leaves?).
-NMDS1<-metaMDS(fung.abun.reduced)
-plot(NMDS1$points, ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2", 
-     col=as.numeric(MetaOrd$source), pch=19)
-
-
+# # This is very strong for the green samples (leaves?).
+# NMDS1<-metaMDS(fung.abun.reduced)
+# plot(NMDS1$points, ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2", 
+#      col=as.numeric(MetaOrd$source), pch=19)
+# 
+# 
 
 
 ### 3- Community composition models
