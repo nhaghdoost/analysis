@@ -179,7 +179,7 @@ par(mfrow=c(1,3), mar = c(5,3,2,1))
 for (i in levels(MetaOne$source)) {
   plot(c(min(MetaOne$dust), max(MetaOne$dust)),
        c(min(Rich.eff.sum$lower[i,]), max(Rich.eff.sum$upper[i,])), 
-       type="n", xlab = paste(i), ylab = "")
+       type="n", xlab = paste(i), ylab = "Richness")
   lines(c(min(MetaOne$dust), max(MetaOne$dust)),
         c(min(Rich.eff.sum$effect[i,]), max(Rich.eff.sum$effect[i,])))
   lines(c(min(MetaOne$dust), max(MetaOne$dust)),
@@ -257,7 +257,7 @@ par(mfrow=c(1,3), mar = c(5,3,2,1))
 for (i in levels(MetaOne$source)) {
   plot(c(min(MetaOne$dust), max(MetaOne$dust)),
        c(min(shan.eff.sum$lower[i,]), max(shan.eff.sum$upper[i,])), 
-       type="n", xlab = paste(i), ylab = "")
+       type="n", xlab = paste(i), ylab = "Shannon diversity")
   lines(c(min(MetaOne$dust), max(MetaOne$dust)),
         c(min(shan.eff.sum$effect[i,]), max(shan.eff.sum$effect[i,])))
   lines(c(min(MetaOne$dust), max(MetaOne$dust)),
@@ -301,7 +301,7 @@ par(mfrow=c(1,3), mar = c(5,3,2,1))
 for (i in levels(MetaOne$source)) {
   plot(c(min(MetaOne$dust), max(MetaOne$dust)),
        c(min(Simp.eff.sum$lower[i,]), max(Simp.eff.sum$upper[i,])), 
-       type="n", xlab = paste(i), ylab = "")
+       type="n", xlab = paste(i), ylab = "Simpson diversity")
   lines(c(min(MetaOne$dust), max(MetaOne$dust)),
         c(min(Simp.eff.sum$effect[i,]), max(Simp.eff.sum$effect[i,])))
   lines(c(min(MetaOne$dust), max(MetaOne$dust)),
@@ -424,8 +424,10 @@ labels.2 <- sapply(ticks.2, function(i) as.expression(bquote(10^ .(i))))
 axis(2, at=c(0.1, 10, 1000, 100000, 10000000), 
      labels=labels.2)
 
+
 funcor.mvabund = mvabund(Corfun0)
 plot(funcor.mvabund)
+
 ## Model selection
 ### if I remember correctly you said that I don't have to do this part and I should just go with the most complicated 
 ## model from diversity models
@@ -512,13 +514,36 @@ plot(metacor0$dust[metacor0$source == "Leaf"], predict(funcor.m2, type="response
 
 
 ###source*dust interactions plot
-### Do a simple glm for the two species affected by the source* dust
+### Do a simple glm for the two species affected by the source* dust interaction
 library(MASS)
 Microsphaeriopsis.model= glm.nb(Corfun0$Microsphaeriopsis_olivacea ~ locality+time+source*dust, data= metacor0)
-                               
-plot(effect("source:dust",Microsphaeriopsis.model ,multiline=TRUE,confidence.level = 0.95))
+Micros.anova= anova(Microsphaeriopsis.model)                             
 
-anova(Microsphaeriopsis.model)
+Micros.effec= effect("source:dust",Microsphaeriopsis.model ,multiline=TRUE,  ylim=c(-10,10))
+Micros.effec.sum = summary(Micros.effec)
+par(mfrow=c(1,3), mar = c(5,3,2,1))
+for (i in levels(metacor0$source)) {
+  plot(c(min(metacor0$dust), max(metacor0$dust)),
+       c(min(Micros.effec.sum$lower[i,]), max(Micros.effec.sum$upper[i,])), 
+       type="n", xlab = paste(i), ylab = "")
+  lines(c(min(metacor0$dust), max(metacor0$dust)),
+        c(min(Micros.effec.sum$effect[i,]), max(Micros.effec.sum$effect[i,])))
+  lines(c(min(metacor0$dust), max(metacor0$dust)),
+        c(min(Rich.eff.sum$lower[i,]), max(Rich.eff.sum$lower[i,])), 
+        lty="dashed")
+  lines(c(min(metacor0$dust), max(metacor0$dust)),
+        c(min(Micros.effec.sum$upper[i,]), max(Micros.effec.sum$upper[i,])),
+        lty="dashed")}
+
+
+
+
+
+
+
+
+
+
 
 
 Aureobasidium.model= glm.nb (Corfun0$Aureobasidium_sp_A30 ~ locality+time+source*dust, data= metacor0)
