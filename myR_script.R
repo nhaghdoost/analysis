@@ -20,6 +20,7 @@ MetaData = read.csv(file="metadata.csv", header = T, row.names = 1)
 # Isolation success
 IsolSucc = apply(MyAbund,1, sum)
 
+
 # Combine with the rest of the metadata
 MetaData = cbind(MetaData, success = IsolSucc)
 
