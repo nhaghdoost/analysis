@@ -10,6 +10,8 @@ library(rjags)
 library(boral)
 #library(mgcv)
 library(effects)
+library(MASS)
+library(reshape)
 ##################################
 ##################################
 ##### 1- Isolation success analysis:
@@ -27,7 +29,6 @@ MetaData = read.csv(file="metadata.csv", header = T, row.names = 1)
 # Isolation success
 IsolSucc = apply(MyAbund,1, sum)
 
-
 # Combine with the rest of the metadata
 MetaData = cbind(MetaData, success = IsolSucc)
 
@@ -42,40 +43,10 @@ MetaData$time <- factor(MetaData$time, levels = c("1", "2", "3"))
 # T1: the code of the tree at that site 
 # L1: leaf 1 of that tree (can be B=branch, D=dust)
 
-# Some data overview
-# table(MetaData$locality, MetaData$time)
-# table(MetaData$locality, MetaData$source)
-# table(MetaData$time, MetaData$source)
-# table(MetaData$tree, MetaData$source)
-# table(MetaData$tree, MetaData$time)
-# table(MetaData$tree, MetaData$source)
-# table(MetaData$success, MetaData$source)
-
-# # Continuous variables
-# par(mfrow = c(2,1), mar=c(2,2,1,1))
-# hist(MetaData$success, nclass=20)
-# summary(MetaData$success)
-# hist(MetaData$dust, xlab="Dust (mg/cm2)")
-
-# Some simple plots
-# Time?
-# boxplot(MetaData$success ~ MetaData$time)
-# # Locality and dust quantity
-# boxplot(MetaData$dust ~ MetaData$locality)
-# # Dust and sampling time
-# boxplot(MetaData$dust ~ MetaData$time)
-# # Dust quantity at localities at different times
-# boxplot(MetaData$dust[MetaData$time == 1] ~ 
-#           MetaData$locality[MetaData$time == 1])
-# boxplot(MetaData$dust[MetaData$time == 2] ~ 
-#           MetaData$locality[MetaData$time == 2])
-# boxplot(MetaData$dust[MetaData$time == 3] ~ 
-#           MetaData$locality[MetaData$time == 3])
-
 # Models of culturing success
 # success.m1 = glm(success ~ locality + time + source + dust, data=MetaData, 
 #                  family = poisson(link = "log"))
-success.m = glm(success ~ locality + time + source*dust, data=MetaData, 
+success.m = glm (success ~ locality + time + source * dust, data=MetaData, 
                family = poisson(link = "log"))
 
 # Compare model fit: succes.m2 seems better
@@ -87,24 +58,33 @@ success.m = glm(success ~ locality + time + source*dust, data=MetaData,
 # plot(success.m2)
 
 ### Culturing success model results
-success.sammary=summary(success.m)
-success.anova=anova(success.m, test="LRT")
+success.sammary = summary(success.m)
+success.anova = anova(success.m, test="LRT")
 
 # Visualize the culturing success model results
 # Q1: Dust deposition and isolation success
 # Use the model predictions here
+# par(mfrow=c(1,1), mar=c(5,5,2,2))
+# plot(MetaData$dust, fitted(success.m), xlab=c("Dust (mg/cm2)"), 
+#      ylab=c("Isolation success"))
+# lines(MetaData$dust, predict.lm(success.m), col= " blue")
+# # Try to add a trendline + confidence interval for the trendline here. need mor etime for this!
+# abline(coef = coef(success.m))
+# abline(coef= success.m$coefficients["(Intercept)"], success.m
+#       $coefficients["dust"], col= "blue")
+# abline (col="blue", h= coef(success.m), )
+# plot again
 par(mfrow=c(1,1), mar=c(5,5,2,2))
-plot(MetaData$dust, fitted(success.m2), xlab=c("Dust (mg/cm2)"), 
-     ylab=c("Isolation success"))
-# Try to add a trendline + confidence interval for the trendline here
-abline(success.m2$coefficients["(Intercept)"], success.m2$coefficients["dust"])
+plot(MetaData$success ~ MetaData$dust, xlab=c("Dust Deposition (mg/cm2)"), 
+      ylab=c("Isolation success"))
+lines(MetaData$dust, predict.lm(success.m), col= " blue")
 
 # Q2: Locality and isolation success
-boxplot(fitted(success.m2) ~ MetaData$locality, 
+boxplot(fitted(success.m) ~ MetaData$locality, 
         ylab="Isolation success")
 
 # Q4: Source of isolation
-boxplot(fitted(success.m2) ~ MetaData$source,
+boxplot(fitted(success.m) ~ MetaData$source,
         ylab="Source of isolation")
 
 # Dust - source interactions
@@ -113,16 +93,16 @@ boxplot(MetaData$success ~ MetaData$locality*MetaData$source,
         las=2)
 
 ## plot the interaction
-success.effect = effect("source:dust",success.m2 ,  multiline=TRUE)
-plot(success.effect)
+success.effect = effect("source:dust",success.m ,  multiline=TRUE)
+plot(success.effect, xlab = "Dust Deposition (mg/cm2)", ylab = "Isolation success", ylim = c(-2.5,1.5))
 # Effect summaries
 succ.eff.sum = summary(success.effect)
 
 # Coefficients and 95% confidence intervals
-Effs = cbind(Coefficients = coefficients(success.m2), confint(success.m2))
+Effs = cbind(Coefficients = coefficients(success.m), confint(success.m))
 
-###########################
-###########################
+#######################################
+#######################################
 #### 2- Diversity analysis:
 ### Diversity Data input
 
@@ -132,7 +112,7 @@ locality=factor(MetaData$locality)
 
 # I changed source to Source, as source() seems to be an R function
 Source = factor(MetaData$source, levels = c("Leaf", "Branch", "Dust"))
-MetaData$time<-factor(my.metadata$time, levels = c("1","2","3"))
+MetaData$time <- factor(MetaData$time, levels = c("1","2","3"))
 #dust=(my.metadata$dust)
 
 #### Richness (Species number) model
@@ -154,32 +134,16 @@ hist(log(Richness))
 # Remove the samples with zero observation from the metadata
 MetaRich = MetaData[NotZero,]
 
-## fitting the models for Richness
+## fitting the model for Richness
 # Richness.m1=lm(Richness ~ locality+ time + source*dust, data = MetaRich)
 # Richness.m2=glm(Richness ~ locality+ time + source+dust, data = MetaRich, 
 #                 family=poisson(link = "log"))
 Richness.m= glm(Richness ~ locality + time + source*dust, data = MetaRich, 
                 family=poisson(link = "log"))
- 
-# model diagnostic plots
-# Change plotting parameters, so all diagnostic plots are on the same sheet
-# par(mfrow=c(2,2))
-# plot(Richness.m1)
-# plot(Richness.m2)
-# plot(Richness.m3)
-# summary(Richness.m1)
-# summary(Richness.m2)
-# summary(Richness.m3)
-# Look for the AICs: Akaike Information Criteria and model selection
-# AIC(Richness.m1)
-# AIC(Richness.m2)
-# AIC(Richness.m3)
-# The AIC says that the simple linear model (m1) is the best fit 
-# (although still crappy according to the diagnostic plot)
 
 ### Richness Model Evaluations
-Richness.anova=anova(Richness.m, test="LRT")
-Richness.summary=summary(Richness.m)
+Richness.anova = anova (Richness.m, test="LRT")
+Richness.summary = summary (Richness.m)
 
 # Visualize Richness changes
 # What does it mean? With predicted values
@@ -188,23 +152,9 @@ boxplot(fitted(Richness.m) ~ MetaRich$source, xlab="Source", ylab="Richness")
 # Richness in branch and dust similar, but richness stat. sign. lower in leaf
 
 # Interaction plots:
-Richness.effect = effect("source:dust",Richness.m,multiline=TRUE,  ylim=c(-10,10))
-plot(Richness.effect, ylab = "Richness")
+Richness.effect = effect("source:dust",Richness.m, multiline=TRUE, confidence.level = 0.95)
+plot(Richness.effect, ylab = "Richness", xlab = "Dust Deposition (mg/cm2)", ylim = c(-1.5,2))
 Rich.eff.sum = summary(Richness.effect)
-
-# par(mfrow=c(1,3), mar = c(5,3,2,1))
-# for (i in levels(MetaOne$source)) {
-#   plot(c(min(MetaOne$dust), max(MetaOne$dust)),
-#        c(min(Rich.eff.sum$lower[i,]), max(Rich.eff.sum$upper[i,])), 
-#        type="n", xlab = paste(i), ylab = "Richness")
-#   lines(c(min(MetaOne$dust), max(MetaOne$dust)),
-#         c(min(Rich.eff.sum$effect[i,]), max(Rich.eff.sum$effect[i,])))
-#   lines(c(min(MetaOne$dust), max(MetaOne$dust)),
-#         c(min(Rich.eff.sum$lower[i,]), max(Rich.eff.sum$lower[i,])), 
-#         lty="dashed")
-#   lines(c(min(MetaOne$dust), max(MetaOne$dust)),
-#         c(min(Rich.eff.sum$upper[i,]), max(Rich.eff.sum$upper[i,])),
-#         lty="dashed")}
 
 ### Shannon and Simpson models.
 # Keep only samples with at least two OTUs
@@ -234,115 +184,140 @@ hist(log(simpson))
 #hist(Evenness)
 
 ## Shannon models: let's fit all of them first
-shannon.m=lm(shannon ~ locality+time+source*dust, data=MetaNotOne)
+shannon.m = lm (shannon ~ locality + time + source*dust, data = MetaNotOne)
 
-# # plot all diagnostics
- # par(mfrow=c(2,2))
- # plot(shannon.m)
-# plot(shannon.m2)
-# plot(shannon.m)
-# 
-# # AICs - the third is the best fit + it has the best diagnostic plots
-# AIC(shannon.m1)
-# AIC(shannon.m2)
-# AIC(shannon.m4)
-
-# These are probably not necessary, as these models are worse fits
-# summary(shannon.m1) 
-# anova(shannon.m1, test="Chisq")
-# summary(shannon.m2) 
-# anova(shannon.m2, test = "Chisq")
-
-# Best Shannon model statistics
-shannon.summary=summary(shannon.m) 
-shannon.anova=anova(shannon.m, test = "LRT")
+## Shannon model statistics
+shannon.summary = summary (shannon.m) 
+shannon.anova = anova (shannon.m, test = "LRT")
 
 # Interaction plots:
-shannon.effect = effect("source:dust",shannon.m,multiline=TRUE,  ylim=c(-10,10))
+shannon.effect = effect("source:dust", shannon.m, multiline=TRUE)
+shan.eff.sum = summary (shannon.effect)
+plot(shannon.effect,ylab = "Shannon Diversity", xlab = "Dust Deposition (mg/cm2)", ylim = c(-0.1,1.5) )
 
 # Put here other boxplots if you wnat to show other effects, e.g. time or locality
-
 # Plot the interaction effect
 # Either plot them on three different plots, 
 # or scale the ylim values for each of them.
-plot(shannon.effect, ylim = c(-1,2))
+# plot(shannon.effect, ylim = c(-1,2))
 
-# Effect summary
-shan.eff.sum = summary(shannon.effect)
 
-## Simpson models:
-simpson.m = lm(simpson ~ locality + time + source*dust, data=MetaNotOne)
-# simpson.m2=glm(simpson~time+locality+source+dust, data=MetaOne,family=Gamma(link = "log"))
-# simpson.m3=glm(simpson~locality+time+source*dust, data = MetaRich,family = Gamma(link="log"))
-# 
-# # Diagnostics
-# par(mfrow = c(2,2))
-# plot(simpson.m)
-# plot(simpson.m2)
-# plot(simpson.m3)
-# 
-# # AICs - again everything says the m3 is the best.
-# AIC(simpson.m1)
-# AIC(simpson.m2)
-# AIC(simpson.m3)
-# 
-# # Model statistics
-# # summary(simpson.m1)
-# # anova(simpson.m1, test= "Chisq")
-# # summary(simpson.m2)
-# # anova(simpson.m2, test= "Chisq")
-
-simpson.summary=summary(simpson.m)
-simpson.anova=anova(simpson.m, test= "Chisq")
+## Simpson model:
+simpson.m = lm (simpson ~ locality + time + source*dust, data=MetaNotOne)
+simpson.summary = summary (simpson.m)
+simpson.anova = anova (simpson.m, test= "Chisq")
 
 # Other boxplot if needed here:
 
 # Interaction plots:
-simpson.effect = effect("source:dust",simpson.m,multiline=TRUE,  ylim=c(-10,10))
+simpson.effect = effect("source:dust", simpson.m, multiline=TRUE)
 
 # plot interaction effects
-plot(simpson.effect, ylim = c(0,1))
+plot(simpson.effect,ylab = "Simpson Diversity", xlab = "Dust Deposition (mg/cm2)", ylim = c(-0.1,1))
 
 # Effect summary
-Simp.eff.sum = summary(simpson.effect)
+Simp.eff.sum = summary (simpson.effect)
+
+#######################################################
+#######################################################
+### 3- Community composition model
+
+fun.Mvabund = mvabund(MyAbund)
+plot(fun.Mvabund)
+
+fun.Mvabund.m = manyglm (fun.Mvabund ~ locality + time + source*dust, data= MetaData,
+                    family="negative.binomial", show.residuals=T)
+
+plot.manyglm(fun.Mvabund.m)
+
+fun.Mvabund.m.sum = summary.manyglm (fun.Mvabund.m, nBoot=100, test="LR",p.uni="adjusted", 
+                                  resamp="montecarlo")
+
+## Analysis of variance explained by the predictors
+fun.Mvabund.m.anova = anova.manyglm (fun.Mvabund.m, nBoot=100, test="LR", p.uni="adjusted", 
+                                resamp="montecarlo")
+
+# ## OTUs significantly affected by the source?? (at p<=0.001???)
+mvabund.m.anova <- as.data.frame(fun.Mvabund.m.anova$uni.p)
+
+fun.Mvabund.m.source = colnames(mvabund.m.anova)[mvabund.m.anova ["source",] <= 0.05]
+colnames(mvabund.m.anova)[mvabund.m.anova["source",]<= 0.05]
+colnames(mvabund.m.anova)[mvabund.m.anova["locality",]<= 0.05]
+colnames(mvabund.m.anova)[mvabund.m.anova["time",]<= 0.05]
+colnames(mvabund.m.anova)[mvabund.m.anova["dust",]<= 0.05]
+colnames(mvabund.m.anova)[mvabund.m.anova["source:dust",]<= 0.01]
+
+###source*dust interactions plot
+### Negative binomial glm for the species affected by the source* dust interaction
+
+Microsphaeriopsis.model= glm.nb(MyAbund$Microsphaeriopsis_olivacea ~ locality + time + source*dust,
+                                data= MetaData)
+Micros.anova = anova (Microsphaeriopsis.model, test = "Chisq")                             
+
+Micros.effec= effect("source:dust", Microsphaeriopsis.model)
+Micros.effec.sum = summary (Micros.effec)
+plot(Micros.effec, ylab = "Microsphaeriopsis_olivacea", xlab = "Dust Deposition (mg/cm2)", ylim = c(-35,3))
+
+## Coefficients
+fun.Mvabund.m.coef = as.data.frame(fun.Mvabund.m$coefficients)
+
+## mean-centering the contrasts
+fun.Mvabund.m.coef.contrast = fun.Mvabund.m.coef - apply (fun.Mvabund.m.coef,2,mean)
+
+# ### plot effects
+# 
+# predict(funcor.m2, type="response")
+# 
+# plot(metacor0$dust, predict(funcor.m2, type="response")[,"Gnomoniaceae_sp_66"])
+# 
+# plot(metacor0$dust[metacor0$source == "Leaf"], predict(funcor.m2, type="response")
+#      [metacor0$source == "Leaf","Gnomoniaceae_sp_66"])
+# plot(metacor0$dust[metacor0$source == "Branch"], predict(funcor.m2, type="response")
+#      [metacor0$source == "Branch","Gnomoniaceae_sp_66"])
+# plot(metacor0$dust[metacor0$source == "Dust"], predict(funcor.m2, type="response")
+#      [metacor0$source == "Dust","Gnomoniaceae_sp_66"])
+# plot(metacor0$dust[metacor0$source == "Leaf"],
+#      Corfun0[metacor0$source == "Leaf","Gnomoniaceae_sp_66"])
+# plot(metacor0$dust[metacor0$source == "Leaf"], predict(funcor.m2, type="response")
+#      [metacor0$source == "Leaf","Gnomoniaceae_sp_66"])
 
 
-# # Actually, let's plot the model predictions.
-# #plot(MetaOne$dust, fitted(shannon.m3), xlab="Dust concentration")
-# par(mfrow =c(1,3))
-# boxplot(fitted(Richness.m1) ~ MetaRich$source, xlab="Source of isolation", ylab="Richness")
-# ## why the ylab doesn't work here?
-# boxplot(fitted(shannon.m3) ~ MetaOne$source, xlab="Shannon")
-# boxplot(fitted(simpson.m3) ~ MetaOne$source, xlab="Simpson")
-
-#### Fishers alpha log-series: do we really need this?
-## Family for this model?
-#hist(Fisheralpha)
-#Fisheralpha.m=glm(Fisheralpha~time+source*dust+locality, data= MetaOne)
-
-#par(mfrow=c(2,2))
-#plot(Fisheralpha.m)
-
-#Fisher.summary=summary(Fisheralpha.m)
-#fisher.anova=anova(Fisheralpha.m, test="Chisq")
-
-###Final models:
-### I changed the order of the factors in the model and it did not really change the results and these three
-### models are final
-# Richness.m1=lm(RichnessNotZero~time+locality+source*dust, data = MetaRich)
-# shannon.m3=glm(shannon~locality+time+source*dust, data=MetaObs, family=Gamma(link="log"))
-# simpson.m3=glm(simpson~locality+time+source*dust, data = MetaObs,family = Gamma(link="log"))
-
-### 3- Community composition models
-# Put the model first
+###source*dust interactions plot
+### Do a simple glm for the two species affected by the source* dust interaction
+# 
+# Microsphaeriopsis.model= glm.nb(Corfun0$Microsphaeriopsis_olivacea ~ locality+time+source*dust, data= metacor0)
+# Micros.anova= anova(Microsphaeriopsis.model)                             
+# 
+# Micros.effec= effect("source:dust",Microsphaeriopsis.model ,multiline=TRUE,  ylim=c(-10,10))
+# Micros.effec.sum = summary(Micros.effec)
+# 
+# 
+# Aureobasidium.model= glm.nb (Corfun0$Aureobasidium_sp_A30 ~ locality+time+source*dust, data= metacor0)
+# 
+# plot(effect("source:dust",Aureobasidium.model ,multiline=TRUE,confidence.level = 0.95))
+# 
+# anova(Aureobasidium.model)
+### similarity analysis using anosim and adonis functions (corfun0=fungal abundance matrix for core OTUs and metacor0 
+# ## is the metadata)
+# braysimi= anosim(Corfun0,metacor0$source,permutations = 999,distance = "bray")
+# 
+# jaccardsimi= anosim(Corfun0,metacor0$source, permutations = 999, distance = "jaccard")
+# 
+# 
+# corfunAdon= adonis(Corfun0~locality+time+source*dust,data= metacor0,permutations = 999, method = "bray")
+# 
+# ### permanova for all of the species
+# 
+permanova.total = adonis (MyAbund ~ locality + time + source*dust, data= MetaData 
+                       ,permutations = 999, method = "bray")
 
 #### Model-based ordination
 
 # Remove species present in only one sample
-CountInSample = apply(fungl.abun.not.zero,2,sum)
+CountInSample = apply(AbundNotZero,2,sum)
 
 # I needed to remove the species that were seen in a few samples.
-fung.abun.reduced = fungl.abun.not.zero[,CountInSample > 3]
+fung.abun.reduced = AbundNotZero[,CountInSample > 3]
 fung.abun.reduced = fung.abun.reduced[apply(fung.abun.reduced,1,sum) > 0,]
 
 MetaOrd = MetaRich[rownames(MetaRich) %in% rownames(fung.abun.reduced),]
@@ -361,22 +336,55 @@ par(mar=c(4,4,1,1))
 ordibora= ordiplot(ModelOrd$lv.median, choices = c(1,2), type = "none", cex =0.5 
          ,display = "sites", xlim = c(-0.3,0.3))
 points(ordibora,"sites", pch=20 ,col=as.numeric(MetaOrd$source))
-# ordispider(ordibora,MetaOrd$source, col= "gray" )
+#ordispider(ordibora,MetaOrd$source, col= "gray" )
 mylegend = legend(0.7, 0.9, c("Leaf","Branch","Dust"), 
-                  fill=c(3,1,2), border="white", bty="n")
+                  fill=c("green", "red", "gray"), border="white", bty="n")
 with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
-                          draw="polygon", col=3,
+                          draw="polygon", col="green",
                           alpha=200,kind="se",conf=0.95, 
                           show.groups=(c("Leaf"))))
 with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
-                          draw="polygon", col=1,
+                          draw="polygon", col="red",
                           alpha=150,kind="se",conf=0.95,
                           show.groups=(c("Branch")))) 
 with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
-                          draw="polygon", col=2,
+                          draw="polygon", col="gray",
                           alpha=200,kind="se",conf=0.95,
                           show.groups=(c("Dust"))))
 # ordisurf of dust: show dust + source interaction on the whole community
+ordisurf(ModelOrd$lv.median, MetaOrd$dust, add=T, col = "blue")
+
+
+# Insert the source into the rownames of the point coordinates
+
+ModelToDist = ModelOrd$lv.median
+rownames(ModelToDist) = paste(MetaOrd$source, rownames(ModelToDist), sep = ".")
+
+
+# Calculate the distance among the sites
+ModelDist = dist(ModelToDist, method = "euclidean")
+
+BranchLeaf_Dist = melt( as.matrix(ModelDist)[grep("Branch", rownames(ModelToDist)), 
+                                             grep("Leaf", rownames(ModelToDist))] )
+
+BranchDust_Dist = melt( as.matrix(ModelDist)[grep("Branch", rownames(ModelToDist)), 
+                                             grep("Dust", rownames(ModelToDist))] )
+
+DustLeaf_Dist = melt( as.matrix(ModelDist)[grep("Dust", rownames(ModelToDist)), 
+                                           grep("Leaf", rownames(ModelToDist))] )
+
+GroupedDist = rbind(BranchLeaf_Dist, BranchDust_Dist, DustLeaf_Dist)
+GroupedDist = data.frame(GroupedDist, 
+                         groups = c(rep("Branch2Leaf", nrow(BranchLeaf_Dist)), 
+                                    rep("Branch2Dust", nrow(BranchDust_Dist)),
+                                    rep("Dust2Leaf", nrow(DustLeaf_Dist))))
+
+# Post-hoc testing of group distances
+Tukey.dist= TukeyHSD (aov(value ~ groups, data = GroupedDist))
+
+# It makes sense if you did a good surface sterilization: probably it is easier 
+# for a fungus to go into a leaf than into a branch
+boxplot(GroupedDist$value ~GroupedDist$groups)
 
 ### Why this plot is different from NMDS?
 # Because the NMDS plot likely has overdispersion effects.
@@ -412,8 +420,7 @@ with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5,
 #      labels=labels.2)
 
 
-funcor.mvabund = mvabund(Corfun0)
-plot(funcor.mvabund)
+
 
 ## Model selection
 # ### if I remember correctly you said that I don't have to do this part and I should just go with the most complicated 
@@ -447,112 +454,7 @@ plot(funcor.mvabund)
 # metacor0$locality=factor(metacor0$locality)
 
 ## Selected model: funcor.m2
-funcor.m2 = manyglm(funcor.mvabund ~ locality+time+source*dust, data= metacor0,
-                    family="negative.binomial", show.residuals=T)
 
-plot.manyglm(funcor.m2)
-
-### ask about the error
-
-Model.m2.summary= summary.manyglm(funcor.m2, nBoot=300, test="LR",p.uni="adjusted", 
-                                  resamp="montecarlo")
-
-## Analysis of variance explained by the predictors
-funcor.anova.m2 = anova.manyglm(funcor.m2, nBoot=300, test="LR", p.uni="adjusted", 
-                     resamp="montecarlo")
-
-# ## OTUs significantly affected by the source?? (at p<=0.001???)
-m2.p.anova <- as.data.frame(funcor.anova.m2$uni.p)
-
-fun.m2.source = colnames(m2.p.anova)[m2.p.anova["source",]<=0.1]
-colnames(m2.p.anova)[m2.p.anova["source",]<=0.001]
-colnames(m2.p.anova)[m2.p.anova["locality",]<=0.1]
-colnames(m2.p.anova)[m2.p.anova["time",]<=0.1]
-# try also putting the interaction here
-
-
-## Visualization of source*dus interactions 
-## Coefficients
-funcor.m2.coef = as.data.frame(funcor.m2$coefficients)
-
-## How do I know if i have an outlier or not?
-
-
-## mean-centering the contrasts
-fun.coef.mean.contrast = funcor.m2.coef - apply(funcor.m2.coef,2,mean)
-
-
-### plot effects
-
-?predict.glm
-predict(funcor.m2, type="response")
-
-plot(metacor0$dust, predict(funcor.m2, type="response")[,"Gnomoniaceae_sp_66"])
-
-plot(metacor0$dust[metacor0$source == "Leaf"], predict(funcor.m2, type="response")
-     [metacor0$source == "Leaf","Gnomoniaceae_sp_66"])
-plot(metacor0$dust[metacor0$source == "Branch"], predict(funcor.m2, type="response")
-     [metacor0$source == "Branch","Gnomoniaceae_sp_66"])
-plot(metacor0$dust[metacor0$source == "Dust"], predict(funcor.m2, type="response")
-     [metacor0$source == "Dust","Gnomoniaceae_sp_66"])
-plot(metacor0$dust[metacor0$source == "Leaf"],
-     Corfun0[metacor0$source == "Leaf","Gnomoniaceae_sp_66"])
-plot(metacor0$dust[metacor0$source == "Leaf"], predict(funcor.m2, type="response")
-     [metacor0$source == "Leaf","Gnomoniaceae_sp_66"])
-
-
-###source*dust interactions plot
-### Do a simple glm for the two species affected by the source* dust interaction
-library(MASS)
-Microsphaeriopsis.model= glm.nb(Corfun0$Microsphaeriopsis_olivacea ~ locality+time+source*dust, data= metacor0)
-Micros.anova= anova(Microsphaeriopsis.model)                             
-
-Micros.effec= effect("source:dust",Microsphaeriopsis.model ,multiline=TRUE,  ylim=c(-10,10))
-Micros.effec.sum = summary(Micros.effec)
-par(mfrow=c(1,3), mar = c(5,3,2,1))
-for (i in levels(metacor0$source)) {
-  plot(c(min(metacor0$dust), max(metacor0$dust)),
-       c(min(Micros.effec.sum$lower[i,]), max(Micros.effec.sum$upper[i,])), 
-       type="n", xlab = paste(i), ylab = "")
-  lines(c(min(metacor0$dust), max(metacor0$dust)),
-        c(min(Micros.effec.sum$effect[i,]), max(Micros.effec.sum$effect[i,])))
-  lines(c(min(metacor0$dust), max(metacor0$dust)),
-        c(min(Rich.eff.sum$lower[i,]), max(Rich.eff.sum$lower[i,])), 
-        lty="dashed")
-  lines(c(min(metacor0$dust), max(metacor0$dust)),
-        c(min(Micros.effec.sum$upper[i,]), max(Micros.effec.sum$upper[i,])),
-        lty="dashed")}
-
-
-
-
-
-
-
-
-
-
-
-
-Aureobasidium.model= glm.nb (Corfun0$Aureobasidium_sp_A30 ~ locality+time+source*dust, data= metacor0)
-
-plot(effect("source:dust",Aureobasidium.model ,multiline=TRUE,confidence.level = 0.95))
-
-anova(Aureobasidium.model)
-
-
-### similarity analysis using anosim and adonis functions (corfun0=fungal abundance matrix for core OTUs and metacor0 
-## is the metadata)
-braysimi= anosim(Corfun0,metacor0$source,permutations = 999,distance = "bray")
-
-jaccardsimi= anosim(Corfun0,metacor0$source, permutations = 999, distance = "jaccard")
-
-
-corfunAdon= adonis(Corfun0~locality+time+source*dust,data= metacor0,permutations = 999, method = "bray")
-
-### permanova for all of the species
-
-permanova.total=adonis(fungl.abun2~locality+time+source*dust,data=MetaObs,permutations = 999,method = "bray")
 
 
 
