@@ -1,6 +1,6 @@
-# Re-run everything!!!
-# first run this: rm(list = ls())
-# this deletes all previous objects
+
+
+
 
 ## Pakages we need for our project
 library(mvabund)
@@ -35,7 +35,8 @@ MetaData = cbind(MetaData, success = IsolSucc)
 # Re-arrange the order of the factor predictors. branches and dust are compared to leaves.
 MetaData$source <- factor(MetaData$source, levels = c("Leaf", "Branch", "Dust"))
 MetaData$time <- factor(MetaData$time, levels = c("1", "2", "3"))
-
+MetaData$tree <- factor(MetaData$tree)
+MetaData$locality <- factor(MetaData$locality)
 # Sample names:
 # B1T1L1:
 # B: locality of collection (B = Bisoton)
@@ -43,19 +44,11 @@ MetaData$time <- factor(MetaData$time, levels = c("1", "2", "3"))
 # T1: the code of the tree at that site 
 # L1: leaf 1 of that tree (can be B=branch, D=dust)
 
-# Models of culturing success
+#### Isolation success model
 # success.m1 = glm(success ~ locality + time + source + dust, data=MetaData, 
 #                  family = poisson(link = "log"))
 success.m = glm (success ~ locality + time + source * dust, data=MetaData, 
                family = poisson(link = "log"))
-
-# Compare model fit: succes.m2 seems better
-# AIC(success.m1)
-# AIC(success.m2)
-# 
-# par(mfrow = c(2,2))
-# plot(success.m1)
-# plot(success.m2)
 
 ### Culturing success model results
 success.sammary = summary(success.m)
@@ -245,71 +238,45 @@ colnames(mvabund.m.anova)[mvabund.m.anova["source",]<= 0.05]
 colnames(mvabund.m.anova)[mvabund.m.anova["locality",]<= 0.05]
 colnames(mvabund.m.anova)[mvabund.m.anova["time",]<= 0.05]
 colnames(mvabund.m.anova)[mvabund.m.anova["dust",]<= 0.05]
-colnames(mvabund.m.anova)[mvabund.m.anova["source:dust",]<= 0.01]
+colnames(mvabund.m.anova)[mvabund.m.anova["source:dust",]<= 0.05]
 
+### Rownames of OTUs affected by the source
+row.names(MyAbund)[MyAbund[ ,"Alternaria_sp_A9"] >0]
+row.names(MyAbund)[MyAbund[ ,"Aspergillus_sp_A20"] >0]
+row.names(MyAbund)[MyAbund[ ,"Aureobasidium_sp_A17"] >0]
+row.names(MyAbund)[MyAbund[ ,"Aureobasidium_sp_A30"] >0]
+row.names(MyAbund)[MyAbund[ ,"Byssochlamys_spectabilis_"] >0]
+row.names(MyAbund)[MyAbund[ ,"Cladosporium_herbarum_A8"] >0]
+row.names(MyAbund)[MyAbund[ ,"Dothideomycetes_sp_A1"] >0]
+row.names(MyAbund)[MyAbund[ ,"Gnomoniaceae_sp_66"] >0]
+row.names(MyAbund)[MyAbund[ ,"Microsphaeriopsis_olivacea"] >0]
+row.names(MyAbund)[MyAbund[ ,"Preussia_sp_A31"] >0]
+row.names(MyAbund)[MyAbund[ ,"Quambalaria_cyanescens"] >0]
+row.names(MyAbund)[MyAbund[ ,"Ustilago_A14"] >0]
+row.names(MyAbund)[MyAbund[ ,"Ustilago_A15"] >0]
+row.names(MyAbund)[MyAbund[ ,"Ustilago_A16"] >0]
 ###source*dust interactions plot
 ### Negative binomial glm for the species affected by the source* dust interaction
 
 Microsphaeriopsis.model= glm.nb(MyAbund$Microsphaeriopsis_olivacea ~ locality + time + source*dust,
-                                data= MetaData)
+                               data= MetaData)
 Micros.anova = anova (Microsphaeriopsis.model, test = "Chisq")                             
-
+Micros.summary= summary(Microsphaeriopsis.model)
+# ploting the effect
 Micros.effec= effect("source:dust", Microsphaeriopsis.model)
 Micros.effec.sum = summary (Micros.effec)
-plot(Micros.effec, ylab = "Microsphaeriopsis_olivacea", xlab = "Dust Deposition (mg/cm2)", ylim = c(-35,3))
+plot(Micros.effec, ylab = "Microsphaeriopsis_olivacea", xlab = "Dust Deposition (mg/cm2)", 
+     ylim = c(-30,5))
 
 ## Coefficients
 fun.Mvabund.m.coef = as.data.frame(fun.Mvabund.m$coefficients)
 
 ## mean-centering the contrasts
 fun.Mvabund.m.coef.contrast = fun.Mvabund.m.coef - apply (fun.Mvabund.m.coef,2,mean)
-
-# ### plot effects
-# 
-# predict(funcor.m2, type="response")
-# 
-# plot(metacor0$dust, predict(funcor.m2, type="response")[,"Gnomoniaceae_sp_66"])
-# 
-# plot(metacor0$dust[metacor0$source == "Leaf"], predict(funcor.m2, type="response")
-#      [metacor0$source == "Leaf","Gnomoniaceae_sp_66"])
-# plot(metacor0$dust[metacor0$source == "Branch"], predict(funcor.m2, type="response")
-#      [metacor0$source == "Branch","Gnomoniaceae_sp_66"])
-# plot(metacor0$dust[metacor0$source == "Dust"], predict(funcor.m2, type="response")
-#      [metacor0$source == "Dust","Gnomoniaceae_sp_66"])
-# plot(metacor0$dust[metacor0$source == "Leaf"],
-#      Corfun0[metacor0$source == "Leaf","Gnomoniaceae_sp_66"])
-# plot(metacor0$dust[metacor0$source == "Leaf"], predict(funcor.m2, type="response")
-#      [metacor0$source == "Leaf","Gnomoniaceae_sp_66"])
+### use the confidence intervas and coefficient for each species
 
 
-###source*dust interactions plot
-### Do a simple glm for the two species affected by the source* dust interaction
-# 
-# Microsphaeriopsis.model= glm.nb(Corfun0$Microsphaeriopsis_olivacea ~ locality+time+source*dust, data= metacor0)
-# Micros.anova= anova(Microsphaeriopsis.model)                             
-# 
-# Micros.effec= effect("source:dust",Microsphaeriopsis.model ,multiline=TRUE,  ylim=c(-10,10))
-# Micros.effec.sum = summary(Micros.effec)
-# 
-# 
-# Aureobasidium.model= glm.nb (Corfun0$Aureobasidium_sp_A30 ~ locality+time+source*dust, data= metacor0)
-# 
-# plot(effect("source:dust",Aureobasidium.model ,multiline=TRUE,confidence.level = 0.95))
-# 
-# anova(Aureobasidium.model)
-### similarity analysis using anosim and adonis functions (corfun0=fungal abundance matrix for core OTUs and metacor0 
-# ## is the metadata)
-# braysimi= anosim(Corfun0,metacor0$source,permutations = 999,distance = "bray")
-# 
-# jaccardsimi= anosim(Corfun0,metacor0$source, permutations = 999, distance = "jaccard")
-# 
-# 
-# corfunAdon= adonis(Corfun0~locality+time+source*dust,data= metacor0,permutations = 999, method = "bray")
-# 
-# ### permanova for all of the species
-# 
-permanova.total = adonis (MyAbund ~ locality + time + source*dust, data= MetaData 
-                       ,permutations = 999, method = "bray")
+
 
 #### Model-based ordination
 
@@ -322,7 +289,6 @@ fung.abun.reduced = fung.abun.reduced[apply(fung.abun.reduced,1,sum) > 0,]
 
 MetaOrd = MetaRich[rownames(MetaRich) %in% rownames(fung.abun.reduced),]
 
-# not working
 ModelOrd <- boral(fung.abun.reduced, family = "negative.binomial", num.lv = 2, 
                   n.burnin = 10, n.iteration = 100, n.thin = 1)
 
@@ -338,9 +304,9 @@ ordibora= ordiplot(ModelOrd$lv.median, choices = c(1,2), type = "none", cex =0.5
 points(ordibora,"sites", pch=20 ,col=as.numeric(MetaOrd$source))
 #ordispider(ordibora,MetaOrd$source, col= "gray" )
 mylegend = legend(0.7, 0.9, c("Leaf","Branch","Dust"), 
-                  fill=c("green", "red", "gray"), border="white", bty="n")
+                  fill=c("gray", "red", "green"), border="white", bty="n")
 with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
-                          draw="polygon", col="green",
+                          draw="polygon", col="gray",
                           alpha=200,kind="se",conf=0.95, 
                           show.groups=(c("Leaf"))))
 with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
@@ -348,7 +314,7 @@ with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5,
                           alpha=150,kind="se",conf=0.95,
                           show.groups=(c("Branch")))) 
 with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
-                          draw="polygon", col="gray",
+                          draw="polygon", col="green",
                           alpha=200,kind="se",conf=0.95,
                           show.groups=(c("Dust"))))
 # ordisurf of dust: show dust + source interaction on the whole community
@@ -387,74 +353,5 @@ Tukey.dist= TukeyHSD (aov(value ~ groups, data = GroupedDist))
 boxplot(GroupedDist$value ~GroupedDist$groups)
 
 ### Why this plot is different from NMDS?
-# Because the NMDS plot likely has overdispersion effects.
-# dev.off()
-# par(mar=c(4,4,1,1))
-# plot(ModelOrd$lv.median, col=as.numeric(MetaOrd$source), 
-#             pch=19, main="Latent variable model", las=1.5)
-
-# The NMDS will not be necessary anymore. If you run the two lines below, 
-# you will see how locality and dispersal are mixed up because of the overdispersion.
-# # This is very strong for the green samples (leaves?).
-# NMDS1<-metaMDS(fung.abun.reduced)
-# plot(NMDS1$points, ylim=c(-1.5,1.5), xlab="NMDS1", ylab="NMDS2", 
-#      col=as.numeric(MetaOrd$source), pch=19)
-# 
-# 
-
-
-
-# 
-# png(file="mean-variance-plot.jpeg", units="mm", height=90, width=90, 
-#     pointsize=10, bg="white", res=1200)
-# par(mar = c(4,4,1,1))
-# plot(0.1,0.1, type="n", xlim=c(0.1,100), 
-#      ylim=c(0.1, max(apply(Corfun0,2,var))),
-#      xlab="Mean (log scale)", ylab="Variance (log scale)", log="xy", xaxt="n", yaxt="n")
-# for (i in 1:length(colnames(Corfun0))) {
-#   points(mean(Corfun0[,i]), var(Corfun0[,i]), pch=20, cex=0.7)}
-# axis(1, at=c(0.1, 1,5,10), labels=c(0,1,5,10))
-# ticks.2 = seq(1,9, by=2)
-# labels.2 <- sapply(ticks.2, function(i) as.expression(bquote(10^ .(i))))
-# axis(2, at=c(0.1, 10, 1000, 100000, 10000000), 
-#      labels=labels.2)
-
-
-
-
-## Model selection
-# ### if I remember correctly you said that I don't have to do this part and I should just go with the most complicated 
-# ## model from diversity models
-# 
-# # funcor.m1 = manyglm(funcor.mvabund ~ locality+time+source+dust, data= metacor0,
-# #                  family="negative.binomial", show.residuals=T)
-# # summary(funcor.m1)
-# 
-# funcor.m2 = manyglm(funcor.mvabund ~ locality+time+source*dust, data= metacor0,
-#                     family="negative.binomial", show.residuals=T)
-# 
-# # funcor.m3 = manyglm(funcor.mvabund ~ locality*time+source*dust , data= metacor0, 
-# #                     family="negative.binomial", show.residuals=T) 
-# # summary(funcor.m3)
-# # anova(funcor.m2, funcor.m3, nBoot=50)
-# # 
-# # funcor.m4= manyglm(funcor.mvabund ~ locality*dust+time+source*dust , data= metacor0, 
-# #                    family="negative.binomial", show.residuals=T)
-# # summary(funcor.m4)
-# # anova(funcor.m3,funcor.m4, nBoot = 50)
-# 
-# 
-# ### model 3 is the better option comparing to other models. but I can't find any explanation for the 
-# ## interaction effect of time and locality! aparently somthing happend in those times in those localities but 
-# ### we don't know what!!
-# ### so I want to continue with model 2
-# ## factors:
-# metacor0$time=factor(metacor0$time, levels = c("1","2","3"))
-# metacor0$source = factor(metacor0$source, levels = c("Leaf", "Branch", "Dust"))
-# metacor0$locality=factor(metacor0$locality)
-
-## Selected model: funcor.m2
-
-
-
+### Because the NMDS plot likely has overdispersion effects.
 
