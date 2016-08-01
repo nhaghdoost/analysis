@@ -45,8 +45,6 @@ MetaData$locality <- factor(MetaData$locality)
 # L1: leaf 1 of that tree (can be B=branch, D=dust)
 
 #### Isolation success model
-# success.m1 = glm(success ~ locality + time + source + dust, data=MetaData, 
-#                  family = poisson(link = "log"))
 success.m = glm (success ~ locality + time + source * dust, data=MetaData, 
                family = poisson(link = "log"))
 
@@ -230,7 +228,15 @@ fun.Mvabund.m.sum = summary.manyglm (fun.Mvabund.m, nBoot=100, test="LR",p.uni="
 fun.Mvabund.m.anova = anova.manyglm (fun.Mvabund.m, nBoot=100, test="LR", p.uni="adjusted", 
                                 resamp="montecarlo")
 
-# ## OTUs significantly affected by the source?? (at p<=0.001???)
+## ploting the coef
+## Coefficients
+fun.Mvabund.m.coef = as.data.frame(fun.Mvabund.m$coefficients)
+
+## mean-centering the contrasts
+fun.Mvabund.m.coef.contrast = fun.Mvabund.m.coef - apply (fun.Mvabund.m.coef,2,mean)
+### use the confidence intervas and coefficient for each species
+
+# ## OTUs significantly affected by the source??
 mvabund.m.anova <- as.data.frame(fun.Mvabund.m.anova$uni.p)
 
 fun.Mvabund.m.source = colnames(mvabund.m.anova)[mvabund.m.anova ["source",] <= 0.05]
@@ -268,12 +274,7 @@ Micros.effec.sum = summary (Micros.effec)
 plot(Micros.effec, ylab = "Microsphaeriopsis_olivacea", xlab = "Dust Deposition (mg/cm2)", 
      ylim = c(-30,5))
 
-## Coefficients
-fun.Mvabund.m.coef = as.data.frame(fun.Mvabund.m$coefficients)
 
-## mean-centering the contrasts
-fun.Mvabund.m.coef.contrast = fun.Mvabund.m.coef - apply (fun.Mvabund.m.coef,2,mean)
-### use the confidence intervas and coefficient for each species
 
 
 
