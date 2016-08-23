@@ -1,6 +1,6 @@
 
-
-
+## Effects of dust deposition on endophytic fungal diversity and community composition of Persian Oak##
+## Niloufar Hagh Doust, Moslem Akbarinia, Naser Safaie, Hamed Yousefzadeh, Miklos Balint
 
 ## Pakages we need for our project
 library(mvabund)
@@ -273,10 +273,6 @@ Micros.effec= effect("source:dust", Microsphaeriopsis.model)
 Micros.effec.sum = summary (Micros.effec)
 plot(Micros.effec, ylab = "Microsphaeriopsis_olivacea", xlab = "Dust Deposition (mg/cm2)", 
      ylim = c(-30,5))
-
-
-
-
 
 
 #### Model-based ordination
