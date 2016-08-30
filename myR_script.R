@@ -84,8 +84,18 @@ boxplot(MetaData$success ~ MetaData$locality*MetaData$source,
         las=2)
 
 ## plot the interaction
-success.effect = effect("source:dust",success.m ,  multiline=TRUE)
-plot(success.effect, xlab = "Dust Deposition (mg/cm2)", ylab = "Isolation success", ylim = c(-2.5,1.5))
+success.effect = effect("source:dust",success.m , multiline=TRUE)
+
+suc.eff <- plot(success.effect, xlab = "Dust Deposition (mg/cm2)", ylab = "Isolation success", 
+    main = NULL, ylim = c(-2.5,1.5))
+
+suc.eff # plot original object
+suc.eff$x.scales$cex <- c(1.3, 1.3)
+suc.eff$xlab$cex <- 1.3
+suc.eff$y.scales$cex <- c(1.3, 1.3)
+suc.eff$ylab$cex <- 1.3
+suc.eff # plot edited object
+
 # Effect summaries
 succ.eff.sum = summary(success.effect)
 
@@ -144,8 +154,16 @@ boxplot(fitted(Richness.m) ~ MetaRich$source, xlab="Source", ylab="Richness")
 
 # Interaction plots:
 Richness.effect = effect("source:dust",Richness.m, multiline=TRUE, confidence.level = 0.95)
-plot(Richness.effect, ylab = "Richness", xlab = "Dust Deposition (mg/cm2)", ylim = c(-1.5,2))
+Rich.eff<- plot(Richness.effect, ylab = "Richness", xlab = "Dust Deposition (mg/cm2)", 
+                main= NULL, ylim = c(-1.5,2))
+Rich.eff # plot original object
+Rich.eff$x.scales$cex <- c(1.3, 1.3)
+Rich.eff$xlab$cex <- 1.3
+Rich.eff$y.scales$cex <- c(1.3, 1.3)
+Rich.eff$ylab$cex <- 1.3
+Rich.eff # plot edited object
 Rich.eff.sum = summary(Richness.effect)
+
 
 ### Shannon and Simpson models.
 # Keep only samples with at least two OTUs
@@ -184,7 +202,15 @@ shannon.anova = anova (shannon.m, test = "LRT")
 # Interaction plots:
 shannon.effect = effect("source:dust", shannon.m, multiline=TRUE)
 shan.eff.sum = summary (shannon.effect)
-plot(shannon.effect,ylab = "Shannon Diversity", xlab = "Dust Deposition (mg/cm2)", ylim = c(-0.1,1.5) )
+
+shan.eff<-plot(shannon.effect,ylab = "Shannon Diversity", xlab = "Dust Deposition (mg/cm2)",
+     main= NULL, ylim = c(-0.1,1.5) )
+shan.eff # plot original object
+shan.eff$x.scales$cex <- c(1, 1)
+shan.eff$xlab$cex <- 1.3
+shan.eff$y.scales$cex <- c(1.3, 1.3)
+shan.eff$ylab$cex <- 1.3
+shan.eff # plot edited object
 
 # Put here other boxplots if you wnat to show other effects, e.g. time or locality
 # Plot the interaction effect
@@ -204,8 +230,14 @@ simpson.anova = anova (simpson.m, test= "Chisq")
 simpson.effect = effect("source:dust", simpson.m, multiline=TRUE)
 
 # plot interaction effects
-plot(simpson.effect,ylab = "Simpson Diversity", xlab = "Dust Deposition (mg/cm2)", ylim = c(-0.1,1))
-
+simp.eff<- plot(simpson.effect,ylab = "Simpson Diversity", xlab = "Dust Deposition (mg/cm2)", 
+     main= NULL, ylim = c(-0.1,1))
+simp.eff # plot original object
+simp.eff$x.scales$cex <- c(1, 1)
+simp.eff$xlab$cex <- 1.3
+simp.eff$y.scales$cex <- c(1.3, 1.3)
+simp.eff$ylab$cex <- 1.3
+simp.eff # plot edited object
 # Effect summary
 Simp.eff.sum = summary (simpson.effect)
 
@@ -225,7 +257,7 @@ fun.Mvabund.m.sum = summary.manyglm (fun.Mvabund.m, nBoot=100, test="LR",p.uni="
                                   resamp="montecarlo")
 
 ## Analysis of variance explained by the predictors
-fun.Mvabund.m.anova = anova.manyglm (fun.Mvabund.m, nBoot=100, test="LR", p.uni="adjusted", 
+fun.Mvabund.m.anova = anova.manyglm (fun.Mvabund.m, nBoot=300, test="LR", p.uni="adjusted", 
                                 resamp="montecarlo")
 
 ## ploting the coef
@@ -271,9 +303,13 @@ Micros.summary= summary(Microsphaeriopsis.model)
 # ploting the effect
 Micros.effec= effect("source:dust", Microsphaeriopsis.model)
 Micros.effec.sum = summary (Micros.effec)
-plot(Micros.effec, ylab = "Microsphaeriopsis_olivacea", xlab = "Dust Deposition (mg/cm2)", 
-     ylim = c(-30,5))
-
+Mic.eff<-plot(Micros.effec, ylab = "Microsphaeriopsis olivacea abundance", xlab = "Dust Deposition (mg/cm2)", 
+     main= NULL, ylim = c(-30,5))
+Mic.eff # plot original object
+Mic.eff$x.scales$cex <- c(1.3, 1.3)
+Mic.eff$xlab$cex <- 1.3
+Mic.eff$ylab$cex <- 1.3
+Mic.eff # plot edited object
 
 #### Model-based ordination
 
@@ -293,17 +329,18 @@ ModelOrd <- boral(fung.abun.reduced, family = "negative.binomial", num.lv = 2,
 par(mfrow = c(2,2))
 plot(ModelOrd, ask = FALSE )
 
-# Ordination plot. Please make it similar as the NMDS.
+# Ordination plot.
 dev.off()
 par(mar=c(4,4,1,1))
-ordibora= ordiplot(ModelOrd$lv.median, choices = c(1,2), type = "none", cex =0.5 
-         ,display = "sites", xlim = c(-0.3,0.3))
+ordibora= ordiplot(ModelOrd$lv.median, choices = c(1,2), type = "none", cex = 1.5 
+         ,display = "sites", xlim = c(-0.3,0.3), cex.axis = 1.5,
+         cex.lab = 1.2)
 points(ordibora,"sites", pch=20 ,col=as.numeric(MetaOrd$source))
 #ordispider(ordibora,MetaOrd$source, col= "gray" )
 mylegend = legend(0.7, 0.9, c("Leaf","Branch","Dust"), 
-                  fill=c("gray", "red", "green"), border="white", bty="n")
+                  fill=c("black", "red", "green"), border="white", bty="n", cex = 1.3)
 with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
-                          draw="polygon", col="gray",
+                          draw="polygon", col="black",
                           alpha=200,kind="se",conf=0.95, 
                           show.groups=(c("Leaf"))))
 with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
@@ -315,7 +352,7 @@ with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5,
                           alpha=200,kind="se",conf=0.95,
                           show.groups=(c("Dust"))))
 # ordisurf of dust: show dust + source interaction on the whole community
-ordisurf(ModelOrd$lv.median, MetaOrd$dust, add=T, col = "blue")
+ordisurf(ModelOrd$lv.median, MetaOrd$dust, add=T, col = "blue", labcex= 1.3)
 
 
 # Insert the source into the rownames of the point coordinates
