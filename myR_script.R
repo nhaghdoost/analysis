@@ -241,6 +241,208 @@ simp.eff # plot edited object
 # Effect summary
 Simp.eff.sum = summary (simpson.effect)
 
+#############################
+#############################
+## check to see if we have the same patterns in each locality and each time
+###############
+############### Locality
+##### Isolation success
+success.B = glm (MetaData$success[MetaData$locality == "BISOTON"] ~  
+                   source * dust, data = MetaData[MetaData$locality == "BISOTON",],
+                 family = poisson(link = "log"))
+suc.B.anova= anova(success.B)
+suc.B.sum= summary(success.B)
+
+plot(effect("dust",success.B))
+
+success.H = glm (MetaData$success[MetaData$locality == "HASAN ABAD"] ~  
+                   source * dust, data = MetaData[MetaData$locality == "HASAN ABAD",],
+                 family = poisson(link = "log"))
+suc.H.anova= anova(success.H)
+suc.H.sum= summary(success.H)
+
+success.KH = glm (MetaData$success[MetaData$locality == "KHOSRO ABAD"] ~  
+                   source * dust, data = MetaData[MetaData$locality == "KHOSRO ABAD",],
+                  family = poisson(link = "log"))
+suc.KH.anova= anova(success.KH)
+suc.KH.sum= summary(success.KH)
+
+success.K = glm (MetaData$success[MetaData$locality == "KEREND"] ~  
+                    source * dust, data = MetaData[MetaData$locality == "KEREND",],
+                 family = poisson(link = "log"))
+suc.K.anova= anova(success.K)
+suc.K.sum= summary(success.K)
+
+success.S = glm (MetaData$success[MetaData$locality == "SORKHE DIZE"] ~  
+                   source * dust, data = MetaData[MetaData$locality == "SORKHE DIZE",],
+                 family = poisson(link = "log"))
+suc.S.anova= anova(success.S)
+suc.S.sum= summary(success.S)
+
+
+
+####### Richness
+
+Richness.B = glm (Richness[MetaData$locality == "BISOTON"] ~  
+                   source * dust, data = MetaData[MetaData$locality == "BISOTON",],
+                 family = poisson(link = "log"))
+rich.B.anova= anova(Richness.B)
+rich.B.sum= summary(Richness.B)
+
+Richness.H = glm (Richness[MetaData$locality == "HASAN ABAD"] ~  
+                   source * dust, data = MetaData[MetaData$locality == "HASAN ABAD",],
+                 family = poisson(link = "log"))
+rich.H.anova= anova(Richness.H)
+rich.H.sum= summary(Richness.H)
+
+Richness.KH = glm (Richness[MetaData$locality == "KHOSRO ABAD"] ~  
+                    source * dust, data = MetaData[MetaData$locality == "KHOSRO ABAD",],
+                  family = poisson(link = "log"))
+rich.KH.anova= anova(Richness.KH)
+rich.KH.sum= summary(Richness.KH)
+
+Richness.K = glm (Richness[MetaData$locality == "KEREND"] ~  
+                   source * dust, data = MetaData[MetaData$locality == "KEREND",],
+                 family = poisson(link = "log"))
+rich.K.anova= anova(Richness.K)
+rich.K.sum= summary(Richness.K)
+
+Richness.S = glm (Richness[MetaData$locality == "SORKHE DIZE"] ~  
+                   source * dust, data = MetaData[MetaData$locality == "SORKHE DIZE",],
+                 family = poisson(link = "log"))
+rich.S.anova= anova(Richness.S)
+rich.S.sum= summary(Richness.S)
+
+
+####### Shannon Diversity
+shannon.B = lm (shannon[MetaNotOne$locality == "BISOTON"] ~  
+                  source * dust, data = MetaNotOne[MetaNotOne$locality == "BISOTON",])
+shann.B.anova= anova(shannon.B)
+shann.B.sum= summary(shannon.B)
+
+shannon.H = lm (shannon[MetaNotOne$locality == "HASAN ABAD"] ~  
+                  source * dust, data = MetaNotOne[MetaNotOne$locality == "HASAN ABAD",])
+shann.H.anova= anova(shannon.H)
+shann.H.sum= summary(shannon.H)
+
+shannon.KH = lm (shannon[MetaNotOne$locality == "KHOSRO ABAD"] ~  
+                  source * dust, data = MetaNotOne[MetaNotOne$locality == "KHOSRO ABAD",])
+shann.KH.anova= anova(shannon.KH)
+shann.KH.sum= summary(shannon.KH)
+
+shannon.K = lm (shannon[MetaNotOne$locality == "KEREND"] ~  
+                    source * dust, data = MetaNotOne[MetaNotOne$locality == "KEREND",])
+shann.K.anova= anova(shannon.K)
+shann.K.sum= summary(shannon.K)
+
+shannon.S = lm (shannon[MetaNotOne$locality == "SORKHE DIZE"] ~  
+                  source * dust, data = MetaNotOne[MetaNotOne$locality == "SORKHE DIZE",])
+shann.S.anova= anova(shannon.S)
+shann.S.sum= summary(shannon.S)
+
+####### Simpson Diversity
+simpson.B = lm (simpson[MetaNotOne$locality == "BISOTON"] ~  
+                  source * dust, data = MetaNotOne[MetaNotOne$locality == "BISOTON",])
+simp.B.anova= anova(simpson.B)
+simp.B.sum= summary(simpson.B)
+
+simpson.H = lm (simpson[MetaNotOne$locality == "HASAN ABAD"] ~  
+                  source * dust, data = MetaNotOne[MetaNotOne$locality == "HASAN ABAD",])
+simp.H.anova= anova(simpson.H)
+simp.H.sum= summary(simpson.H)
+
+simpson.KH = lm (simpson[MetaNotOne$locality == "KHOSRO ABAD"] ~  
+                   source * dust, data = MetaNotOne[MetaNotOne$locality == "KHOSRO ABAD",])
+simp.KH.anova= anova(simpson.KH)
+simp.KH.sum= summary(simpson.KH)
+
+simpson.K = lm (simpson[MetaNotOne$locality == "KEREND"] ~  
+                  source * dust, data = MetaNotOne[MetaNotOne$locality == "KEREND",])
+simp.K.anova= anova(simpson.K)
+simp.K.sum= summary(simpson.K)
+
+simpson.S = lm (simpson[MetaNotOne$locality == "SORKHE DIZE"] ~  
+                  source * dust, data = MetaNotOne[MetaNotOne$locality == "SORKHE DIZE",])
+simp.S.anova= anova(simpson.S)
+simp.S.sum= summary(simpson.S)
+
+####plots
+
+
+
+
+#########
+######### TIME
+### ISOLATION SUCCESS
+success.1 = glm (MetaData$success[MetaData$time == "1"] ~  
+                   source * dust, data = MetaData[MetaData$time == "1",],
+                 family = poisson(link = "log"))
+suc.1.anova= anova(success.1)
+suc.1.sum= summary(success.1)
+
+success.2 = glm (MetaData$success[MetaData$time == "2"] ~  
+                   source * dust, data = MetaData[MetaData$time == "2",],
+                 family = poisson(link = "log"))
+suc.2.anova= anova(success.2)
+suc.2.sum= summary(success.2)
+
+success.3 = glm (MetaData$success[MetaData$time == "3"] ~  
+                    source * dust, data = MetaData[MetaData$time == "3",],
+                  family = poisson(link = "log"))
+suc.3.anova= anova(success.3)
+suc.3.sum= summary(success.3)
+
+####### Richness
+Richness.1 = glm (Richness[MetaData$time == "1"] ~  
+                    source * dust, data = MetaData[MetaData$time == "1",],
+                  family = poisson(link = "log"))
+rich.1.anova= anova(Richness.1)
+rich.1.sum= summary(Richness.1)
+
+Richness.2 = glm (Richness[MetaData$time == "2"] ~  
+                    source * dust, data = MetaData[MetaData$time == "2",],
+                  family = poisson(link = "log"))
+rich.2.anova= anova(Richness.2)
+rich.2.sum= summary(Richness.2)
+
+Richness.3 = glm (Richness[MetaData$time == "3"] ~  
+                     source * dust, data = MetaData[MetaData$time == "3",],
+                   family = poisson(link = "log"))
+rich.3.anova= anova(Richness.3)
+rich.3.sum= summary(Richness.3)
+
+####### Shannon Diversity
+shannon.1 = lm (shannon[MetaNotOne$time == "1"] ~  
+                  source * dust, data = MetaNotOne[MetaNotOne$time == "1",])
+shann.1.anova= anova(shannon.1)
+shann.1.sum= summary(shannon.1)
+
+shannon.2 = lm (shannon[MetaNotOne$time == "2"] ~  
+                  source * dust, data = MetaNotOne[MetaNotOne$time == "2",])
+shann.2.anova= anova(shannon.2)
+shann.2.sum= summary(shannon.2)
+
+shannon.3 = lm (shannon[MetaNotOne$time == "3"] ~  
+                   source * dust, data = MetaNotOne[MetaNotOne$time == "3",])
+shann.3.anova= anova(shannon.3)
+shann.3.sum= summary(shannon.3)
+
+####### Simpson Diversity
+simpson.1 = lm (simpson[MetaNotOne$time == "1"] ~  
+                  source * dust, data = MetaNotOne[MetaNotOne$time == "1",])
+simp.1.anova= anova(simpson.1)
+simp.1.sum= summary(simpson.1)
+
+simpson.2 = lm (simpson[MetaNotOne$time == "2"] ~  
+                  source * dust, data = MetaNotOne[MetaNotOne$time == "2",])
+simp.2.anova= anova(simpson.2)
+simp.2.sum= summary(simpson.2)
+
+simpson.3 = lm (simpson[MetaNotOne$time == "3"] ~  
+                   source * dust, data = MetaNotOne[MetaNotOne$time == "3",])
+simp.3.anova= anova(simpson.3)
+simp.3.sum= summary(simpson.3)
+
 #######################################################
 #######################################################
 ### 3- Community composition model
@@ -259,6 +461,8 @@ fun.Mvabund.m.sum = summary.manyglm (fun.Mvabund.m, nBoot=100, test="LR",p.uni="
 ## Analysis of variance explained by the predictors
 fun.Mvabund.m.anova = anova.manyglm (fun.Mvabund.m, nBoot=300, test="LR", p.uni="adjusted", 
                                 resamp="montecarlo")
+fun.Mvabund.m.anova100 = anova.manyglm (fun.Mvabund.m, nBoot=100, test="LR", p.uni="adjusted", 
+                                     resamp="montecarlo")
 
 ## ploting the coef
 ## Coefficients
@@ -296,8 +500,8 @@ row.names(MyAbund)[MyAbund[ ,"Ustilago_A16"] >0]
 ###source*dust interactions plot
 ### Negative binomial glm for the species affected by the source* dust interaction
 
-Microsphaeriopsis.model= glm.nb(MyAbund$Microsphaeriopsis_olivacea ~ locality + time + source*dust,
-                               data= MetaData)
+Microsphaeriopsis.model= glm.nb(MyAbund$Microsphaeriopsis_olivacea ~ locality +
+                                  time + source*dus,data= MetaData)
 Micros.anova = anova (Microsphaeriopsis.model, test = "Chisq")                             
 Micros.summary= summary(Microsphaeriopsis.model)
 # ploting the effect
@@ -310,6 +514,81 @@ Mic.eff$x.scales$cex <- c(1.3, 1.3)
 Mic.eff$xlab$cex <- 1.3
 Mic.eff$ylab$cex <- 1.3
 Mic.eff # plot edited object
+
+#### visualize how other OTUs are affected by the Source*Dust interaction
+
+model.list = list()
+for( i in names(MyAbund)){
+  i.model = glm.nb(MyAbund[,i] ~ locality +
+                                  time + source*dust,data= MetaData)
+  # plot(effect("source:dust", i.model))
+  model.list[[i]] <- i.model
+  
+}
+
+pdf(file = "all species reaction.pdf")
+for( i in names(model.list)){
+  plot(effect("source:dust", model.list[[i]]))
+  print(model.list[[i]])
+}
+dev.off()
+
+pdf(file = "all species reaction.pdf", paper = "USr")
+plot(effect("source:dust", model.list[["Alternaria_sp_A22"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Alternaria_sp_A22 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Alternaria_sp_A25"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Alternaria_sp_A25 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Alternaria_sp_A76"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Alternaria_sp_A76 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Alternaria_sp_A9"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Alternaria_sp_A9 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Arthrinium_marii"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Arthrinium_marii abundance",main= NULL)
+plot(effect("source:dust", model.list[["Aspergillus_sp_A20"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Aspergillus_sp_A20 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Aspergillus_sp_B20"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Aspergillus_sp_B20 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Aspergillus_sp_C7"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Aspergillus_sp_C7 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Aureobasidium_sp_A17"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Aureobasidium_sp_A17 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Aureobasidium_sp_A30"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Aureobasidium_sp_A30 abundance",main= NULL)
+plot(effect("source:dust", model.list[["B25"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "B25 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Beauveria_sp_B15"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Beauveria_sp_B15 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Biscogniauxia_mediterranea"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Biscogniauxia_mediterranea abundance",main= NULL)
+plot(effect("source:dust", model.list[["Byssochlamys_spectabilis_"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Byssochlamys_spectabilis abundance",main= NULL)
+plot(effect("source:dust", model.list[["Chaetomiaceae_sp_A37"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Chaetomiaceae_sp_A37 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Cladosporium_herbarum_A8"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Cladosporium_herbarum_A8 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Comoclathris_sedi"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Comoclathris_sedi abundance",main= NULL)
+plot(effect("source:dust", model.list[["Coniochaeta_sp_A85"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Coniochaeta_sp_A85 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Coniothyrium_sp_A41"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Coniothyrium_sp_A41 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Coniothyrium_sp_A43"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Coniothyrium_sp_A43 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Cytospora_sp_AC35"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Cytospora_sp_AC35 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Cytospora_sp_C2"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Cytospora_sp_C2 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Diatrype_sp_C1"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Diatrype_sp_C1 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Diatrypella_sp_C6"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Diatrypella_sp_C6 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Dikarya_sp_A38"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Dikarya_sp_A38 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Dothideomycetes_sp_A1"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Dothideomycetes_sp_A1 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Dothideomycetes_sp_A48"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Dothideomycetes_sp_A48 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Dothideomycetes_sp_A79"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Dothideomycetes_sp_A79 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Endoconidioma_populi_A39"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Endoconidioma_populi_A39",main= NULL)
+plot(effect("source:dust", model.list[["Fusarium_sp_46"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Fusarium_sp_46 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Gnomoniaceae_sp_70"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Gnomoniaceae_sp_70 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Gnomoniaceae_sp_66"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Gnomoniaceae_sp_66 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Helotiales_sp_A68"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Helotiales_sp_A68 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Humicola_sp_A52"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Humicola_sp_A52 abundance",main= NULL)
+plot(effect("source:dust", model.list[["leotiomyceta_sp_A42"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "leotiomyceta_sp_A42 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Paraphaeosphaeria_sp_B10"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Paraphaeosphaeria_sp_B10 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Penicillium_sp_A21"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Penicillium_sp_A21 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Penicillium_sp_A3"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Penicillium_sp_A3 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Pleosporaceae_sp_A5"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Pleosporaceae_sp_A5 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Pleosporaceae_sp_A78"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Pleosporaceae_sp_A78 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Pleosporaceae_sp_B27"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Pleosporaceae_sp_B27 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Pleosporales_sp_A63"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Pleosporales_sp_A63 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Pleosporineae_sp_A23"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Pleosporineae_sp_A23 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Preussia_africana"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Preussia_africana abundance",main= NULL)
+plot(effect("source:dust", model.list[["Preussia_australis"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Preussia_australis abundance",main= NULL)
+plot(effect("source:dust", model.list[["Preussia_complex_sp_A36"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Preussia_complex_sp_A36 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Preussia_funiculata"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Preussia_funiculata abundance",main= NULL)
+plot(effect("source:dust", model.list[["Preussia_intermedia"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Preussia_intermedia abundance",main= NULL)
+plot(effect("source:dust", model.list[["Preussia_sp_A31"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Preussia_sp_A31 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Quambalaria_cyanescens"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Quambalaria_cyanescens abundance",main= NULL)
+plot(effect("source:dust", model.list[["Schizothecium_sp_B14"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Schizothecium_sp_B14 abundance",main= NULL)
+plot(effect("source:dust", model.list[["Scytalidium_thermophilum"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Scytalidium_thermophilum abundance",main= NULL)
+plot(effect("source:dust", model.list[["Seimatosporium_pezizoides"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Seimatosporium_pezizoides abundance",main= NULL)
+dev.off()
+
 
 #### Model-based ordination
 
