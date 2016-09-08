@@ -254,6 +254,7 @@ anova(success.local)
 summary(success.local)
 plot(effect("source:dust:locality",success.local ))
 #library(sjPlot)
+#library(ggplot2)
 sjp.int(success.local)
 ## have no idea how to plot this
 
@@ -475,7 +476,11 @@ fun.Mvabund.m.anova = anova.manyglm (fun.Mvabund.m, nBoot=300, test="LR", p.uni=
 fun.Mvabund.m.anova100 = anova.manyglm (fun.Mvabund.m, nBoot=100, test="LR", p.uni="adjusted", 
                                      resamp="montecarlo")
 
-## ploting the coef
+## ploting the coef not working
+coef.manyglm=coef(fun.Mvabund.m)
+plot(coef.manyglm)
+
+
 ## Coefficients
 fun.Mvabund.m.coef = as.data.frame(fun.Mvabund.m$coefficients)
 
