@@ -476,7 +476,7 @@ fun.Mvabund.m.anova = anova.manyglm (fun.Mvabund.m, nBoot=300, test="LR", p.uni=
 fun.Mvabund.m.anova100 = anova.manyglm (fun.Mvabund.m, nBoot=100, test="LR", p.uni="adjusted", 
                                      resamp="montecarlo")
 
-## ploting the coef not working
+## ploting the coef not working. 
 coef.manyglm=coef(fun.Mvabund.m)
 plot(coef.manyglm)
 
