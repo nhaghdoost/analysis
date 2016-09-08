@@ -247,6 +247,17 @@ Simp.eff.sum = summary (simpson.effect)
 ###############
 ############### Locality
 ##### Isolation success
+### I think it is better to have only one interaction model instead of several models.
+success.local= glm(MetaData$success~source*dust*locality, data = MetaData,
+                   family = poisson(link = "log") )
+anova(success.local)
+summary(success.local)
+plot(effect("source:dust:locality",success.local ))
+#library(sjPlot)
+sjp.int(success.local)
+## have no idea how to plot this
+
+##Locality models
 success.B = glm (MetaData$success[MetaData$locality == "BISOTON"] ~  
                    source * dust, data = MetaData[MetaData$locality == "BISOTON",],
                  family = poisson(link = "log"))
