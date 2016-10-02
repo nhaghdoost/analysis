@@ -229,6 +229,7 @@ simpson.anova = anova (simpson.m, test= "Chisq")
 # Interaction plots:
 simpson.effect = effect("source:dust", simpson.m, multiline=TRUE)
 
+
 # plot interaction effects
 simp.eff<- plot(simpson.effect,ylab = "Simpson Diversity", xlab = "Dust Deposition (mg/cm2)", 
      main= NULL, ylim = c(-0.1,1))
@@ -243,6 +244,47 @@ Simp.eff.sum = summary (simpson.effect)
 
 #############################
 #############################
+### MERG ALL THE INTERACTION PLOTS 
+success.effect = effect("source:dust",success.m , multiline=TRUE)
+Richness.effect = effect("source:dust",Richness.m, multiline=TRUE, confidence.level = 0.95)
+shannon.effect = effect("source:dust", shannon.m, multiline=TRUE)
+simpson.effect = effect("source:dust", simpson.m, multiline=TRUE)
+### The plot
+dev.off()
+par(mfrow=c(1,3))
+
+##isolation success
+#Leaf
+plot(c(0.01,0.06), c(0.3,1.3), type = "n", xlab="Dust deposition (mg/cm2)",
+     main = "Leaf", ylab = "",cex.axis = 1.5,
+     cex.lab = 1.5, cex.main= 1.5)
+points(c(0.01,0.06), c(0.3756226,0.2955457), type = "l", col= "black")#isolation success
+points(c(0.01,0.06), c(1.245071,0.7484556), type = "l", col="red")#Richness
+points(c(0.01,0.05), c(0.7573420,0.4898882), type = "l", col="blue")#Shannon
+points(c(0.01,0.05), c(0.5374573,0.5828385), type = "l", col="green")#Simpson
+
+#Branch
+plot(c(0.01,0.06), c(0.5,2.1), type = "n", xlab="Dust deposition (mg/cm2)",
+     main = "Branch", ylab = "",cex.axis = 1.5,
+     cex.lab = 1.5,cex.main= 1.5)
+points(c(0.01,0.06), c(2.0987844,0.8687591), type = "l", col= "black")#isolation success
+points(c(0.01,0.06), c(2.015726,1.3100015), type = "l", col="red")#Richness
+points(c(0.01,0.05), c(0.8670190,0.6722335), type = "l", col="blue")#Shannon
+points(c(0.01,0.05), c(0.5550835,0.4743116), type = "l", col="green")#Simpson
+
+#Dust
+plot(c(0.01,0.06), c(0.5,3.2), type = "n", xlab="Dust deposition (mg/cm2)",  
+     main = "Deposited dust", ylab = "",cex.axis = 1.5,
+     cex.lab = 1.5,cex.main= 1.5)
+points(c(0.01,0.06), c(2.1772373,2.5623075), type = "l", col= "black")#isolation success
+points(c(0.01,0.06), c(2.144628,3.1278729), type = "l", col="red")#Richness
+points(c(0.01,0.05), c(0.9417183,1.1881632), type = "l", col="blue")#Shannon
+points(c(0.01,0.05), c(0.5854507,0.6784688), type = "l", col="green")#Simpson
+legend("topleft",legend = c("Isolation success","Richness","Shannon diversity",
+                             "Simpson diversity"),
+       fill = c("black","red","blue","green"),  border="white", bty="n", cex = 1.5)
+
+
 ## check to see if we have the same patterns in each locality and each time
 ###############
 ############### Locality
@@ -265,7 +307,10 @@ success.B = glm (MetaData$success[MetaData$locality == "BISOTON"] ~
 suc.B.anova= anova(success.B)
 suc.B.sum= summary(success.B)
 
-plot(effect("dust",success.B))
+
+
+plot(effect("dust",success.B
+effect("dust",success.B
 
 success.H = glm (MetaData$success[MetaData$locality == "HASAN ABAD"] ~  
                    source * dust, data = MetaData[MetaData$locality == "HASAN ABAD",],
@@ -291,6 +336,132 @@ success.S = glm (MetaData$success[MetaData$locality == "SORKHE DIZE"] ~
 suc.S.anova= anova(success.S)
 suc.S.sum= summary(success.S)
 
+##plotting the locality  models
+## effect objects from each model
+succ.b.eff = effect("source:dust", success.B, multiline=TRUE)#black
+succ.H.eff = effect("source:dust", success.H, multiline=TRUE)#red
+succ.KH.eff = effect("source:dust", success.KH, multiline=TRUE)#blue
+succ.k.eff = effect("source:dust", success.K, multiline=TRUE)#green
+succ.S.eff = effect("source:dust", success.S, multiline=TRUE)#pink
+rich.b.eff=effect("source:dust", Richness.B, multiline=TRUE)#black
+rich.h.eff=effect("source:dust", Richness.H, multiline=TRUE)#red
+rich.kh.eff=effect("source:dust", Richness.KH, multiline=TRUE)#blue
+rich.K.eff=effect("source:dust", Richness.K, multiline=TRUE)#Green
+rich.s.eff=effect("source:dust", Richness.S, multiline=TRUE)#pink
+shann.b.eff=effect("source:dust", shannon.B, multiline=TRUE)#black
+shann.h.eff=effect("source:dust", shannon.H, multiline=TRUE)#red
+shann.kh.eff=effect("source:dust", shannon.KH, multiline=TRUE)#blue
+shann.K.eff=effect("source:dust", shannon.K, multiline=TRUE)#Green
+shann.s.eff=effect("source:dust", shannon.S, multiline=TRUE)#pink
+simp.b.eff=effect("source:dust", simpson.B, multiline=TRUE)#black
+simp.h.eff=effect("source:dust", simpson.H, multiline=TRUE)#red
+simp.kh.eff=effect("source:dust", simpson.KH, multiline=TRUE)#blue
+simp.K.eff=effect("source:dust", simpson.K, multiline=TRUE)#Green
+simp.s.eff=effect("source:dust", simpson.S, multiline=TRUE)#pink
+### The plot
+dev.off()
+par(mfrow=c(4,3))
+
+##isolation success
+#Leaf
+plot(c(0,0.06), c(0,2.5), type = "n", xlab="Dust deposition (mg/cm2)",ylab="Isolation success", 
+     main = "Leaf")
+points(c(0.01, 0.05), c(0.2748741,0.1686716), type = "l", col= "black")
+points(c(0.004, 0.014), c(0.2718915,0.0592935), type = "l", col="red")
+points(c(0.01, 0.06), c(0.7055354,1.044323), type = "l", col="blue")
+points(c(0.002, 0.014), c(0.7593056,0.3068659), type = "l", col="green")
+points(c(0.01, 0.04), c(0.01939612,2.340067), type = "l", col= "pink")
+#Branch
+plot(c(0,0.06), c(0,8.5), type = "n", xlab="Dust deposition (mg/cm2)", ylab="Isolation success",
+     main = "Branch")
+points(c(0.01, 0.05), c(2.0790332,1.9561498), type = "l", col= "black")
+points(c(0.004, 0.014), c(2.8895416,0.7379235), type = "l", col="red")
+points(c(0.01, 0.06), c(2.6565222,1.592049), type = "l", col="blue")
+points(c(0.002, 0.014), c(2.1588502,1.3147342), type = "l", col="green")
+points(c(0.01, 0.04), c(1.93057642,8.454086), type = "l", col= "pink")
+#Dust
+plot(c(0,0.06), c(1.5,4), type = "n", xlab="Dust deposition (mg/cm2)", ylab="Isolation success", 
+     main = "Dust")
+points(c(0.01, 0.05), c(1.9263297, 2.8308144), type = "l", col= "black")
+points(c(0.004, 0.014), c(1.8297366, 2.1506237), type = "l", col="red")
+points(c(0.01, 0.06), c(2.3279795, 3.652412), type = "l", col="blue")
+points(c(0.002, 0.014), c(1.6220277, 3.4907928), type = "l", col="green")
+points(c(0.01, 0.04), c(2.15173242, 3.140973), type = "l", col= "pink")
+###Richness
+#Leaf
+plot(c(0,0.06), c(0,2.5), type = "n", xlab="Dust deposition (mg/cm2)", ylab="Richness" 
+     )
+points(c(0.01, 0.05), c(1.191061,0.9498106), type = "l", col= "black")
+points(c(0.004, 0.014), c(1.974127,0.371652), type = "l", col="red")
+points(c(0.01, 0.06), c(1.508286,1.332691), type = "l", col="blue")
+points(c(0.002, 0.014), c(2.102010,0.8823088), type = "l", col="green")
+points(c(0.01, 0.04), c(1.000000,1.000000), type = "l", col= "pink")
+#Branch
+plot(c(0,0.06), c(1.5,3), type = "n", xlab="Dust deposition (mg/cm2)",ylab="Richness" 
+    )
+points(c(0.01, 0.05), c(2.033527, 2.1161365), type = "l", col= "black")
+points(c(0.004, 0.014), c(2.027248, 1.542201), type = "l", col="red")
+points(c(0.01, 0.06), c(2.426941, 2.819684), type = "l", col="blue")
+points(c(0.002, 0.014), c(1.863773, 2.5688436), type = "l", col="green")
+points(c(0.01, 0.04), c(2.095453, 2.043207), type = "l", col= "pink")
+#Dust
+plot(c(0,0.06), c(1.5,3.5), type = "n", xlab="Dust deposition (mg/cm2)", ylab="Richness"
+    )
+points(c(0.01, 0.05), c(1.906941, 3.0415398), type = "l", col= "black")
+points(c(0.004, 0.014), c(2.211765, 2.017266), type = "l", col="red")
+points(c(0.01, 0.06), c(1.780617, 2.164073), type = "l", col="blue")
+points(c(0.002, 0.014), c(1.489016, 2.3935918), type = "l", col="green")
+points(c(0.01, 0.04), c(2.119341, 2.406066), type = "l", col= "pink")
+###Shannon diversity
+#Leaf
+plot(c(0,0.06), c(-0.1,1.7), type = "n", xlab="Dust deposition (mg/cm2)", ylab="Shannon diversity", 
+     )
+points(c(0.01, 0.05), c(0.7529783,1.0985422), type = "l", col= "black")
+points(c(0.004, 0.014), c(0.6931472,0.6931472), type = "l", col="red")
+points(c(0.01, 0.06), c(0.7089145,1.0335732), type = "l", col="blue")
+points(c(0.002, 0.014), c(1.3483858,1.684787), type = "l", col="green")
+points(c(0.01, 0.04), c(0,0), type = "l", col= "pink")
+#Branch
+plot(c(0,0.06), c(0.5,1.1), type = "n", xlab="Dust deposition (mg/cm2)", ylab="Shannon diversity", 
+     )
+points(c(0.01, 0.05), c(0.7564696,0.7729018), type = "l", col= "black")
+points(c(0.004, 0.014), c(0.9195578,0.6375401), type = "l", col="red")
+points(c(0.01, 0.06), c(0.9228958,0.8483512), type = "l", col="blue")
+points(c(0.002, 0.014), c(1.0869643,0.638904), type = "l", col="green")
+points(c(0.01, 0.04), c(0.9357071,0.5588031), type = "l", col= "pink")
+#Dust
+plot(c(0,0.06), c(0.5,1.5), type = "n", xlab="Dust deposition (mg/cm2)", ylab="Shannon diversity", 
+     )
+points(c(0.01, 0.05), c(0.9145406,1.2601045), type = "l", col= "black")
+points(c(0.004, 0.014), c(0.9591446,0.6159573), type = "l", col="red")
+points(c(0.01, 0.06), c(0.8851114,1.2226282), type = "l", col="blue")
+points(c(0.002, 0.014), c(0.8729864,1.209388), type = "l", col="green")
+points(c(0.01, 0.04), c(0.9382430,1.1192351), type = "l", col= "pink")
+##Simpson diversity
+#Leaf
+plot(c(0,0.06), c(-0.1,1), type = "n", xlab="Dust deposition (mg/cm2)", ylab="Simpson diversity", 
+     )
+points(c(0.01, 0.05), c(0.5263859,0.6787818), type = "l", col= "black")
+points(c(0.004, 0.014), c(0.5000000,0.5000000), type = "l", col="red")
+points(c(0.01, 0.06), c(0.5154674,0.8339494), type = "l", col="blue")
+points(c(0.002, 0.014), c(0.7356800,0.8627564), type = "l", col="green")
+points(c(0.01, 0.04), c(0,0), type = "l", col= "pink")
+#Branch
+plot(c(0,0.06), c(0.3,0.7), type = "n", xlab="Dust deposition (mg/cm2)", ylab="Simpson diversity", 
+     )
+points(c(0.01, 0.05), c(0.5080873,0.5174149), type = "l", col= "black")
+points(c(0.004, 0.014), c(0.5782333,0.4667959), type = "l", col="red")
+points(c(0.01, 0.06), c(0.5743985,0.5394737), type = "l", col="blue")
+points(c(0.002, 0.014), c(0.6528082,0.4788129), type = "l", col="green")
+points(c(0.01, 0.04), c(0.5741159,0.3950454), type = "l", col= "pink")
+#Dust
+plot(c(0,0.06), c(0.3,0.8), type = "n", xlab="Dust deposition (mg/cm2)", ylab="Simpson diversity", 
+     )
+points(c(0.01, 0.05), c(0.5621166,0.7145125), type = "l", col= "black")
+points(c(0.004, 0.014), c(0.5992121,0.4655260), type = "l", col="red")
+points(c(0.01, 0.06), c(0.5626564,0.6665441), type = "l", col="blue")
+points(c(0.002, 0.014), c(0.5639695,0.6910460), type = "l", col="green")
+points(c(0.01, 0.04), c(0.5906979,0.6560817), type = "l", col= "pink")
 
 
 ####### Richness
@@ -324,7 +495,6 @@ Richness.S = glm (Richness[MetaData$locality == "SORKHE DIZE"] ~
                  family = poisson(link = "log"))
 rich.S.anova= anova(Richness.S)
 rich.S.sum= summary(Richness.S)
-
 
 ####### Shannon Diversity
 shannon.B = lm (shannon[MetaNotOne$locality == "BISOTON"] ~  
@@ -377,9 +547,6 @@ simpson.S = lm (simpson[MetaNotOne$locality == "SORKHE DIZE"] ~
                   source * dust, data = MetaNotOne[MetaNotOne$locality == "SORKHE DIZE",])
 simp.S.anova= anova(simpson.S)
 simp.S.sum= summary(simpson.S)
-
-####plots
-
 
 
 
@@ -513,6 +680,9 @@ row.names(MyAbund)[MyAbund[ ,"Quambalaria_cyanescens"] >0]
 row.names(MyAbund)[MyAbund[ ,"Ustilago_A14"] >0]
 row.names(MyAbund)[MyAbund[ ,"Ustilago_A15"] >0]
 row.names(MyAbund)[MyAbund[ ,"Ustilago_A16"] >0]
+###
+MyAbund$Alternaria_sp_A9
+
 ###source*dust interactions plot
 ### Negative binomial glm for the species affected by the source* dust interaction
 
@@ -627,8 +797,8 @@ plot(ModelOrd, ask = FALSE )
 # Ordination plot.
 dev.off()
 par(mar=c(4,4,1,1))
-ordibora= ordiplot(ModelOrd$lv.median, choices = c(1,2), type = "none", cex = 1.5 
-         ,display = "sites", xlim = c(-0.3,0.3), cex.axis = 1.5,
+ordibora= ordiplot(ModelOrd$lv.median, choices = c(1,2),display = "sites",
+                   type = "none", cex = 1.5 , xlim = c(-0.3,0.3), cex.axis = 1.5,
          cex.lab = 1.2)
 points(ordibora,"sites", pch=20 ,col=as.numeric(MetaOrd$source))
 #ordispider(ordibora,MetaOrd$source, col= "gray" )
@@ -647,7 +817,7 @@ with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5,
                           alpha=200,kind="se",conf=0.95,
                           show.groups=(c("Dust"))))
 # ordisurf of dust: show dust + source interaction on the whole community
-ordisurf(ModelOrd$lv.median, MetaOrd$dust, add=T, col = "blue", labcex= 1.3)
+#ordisurf(ModelOrd$lv.median, MetaOrd$dust, add=T, col = "blue", labcex= 1.3)
 
 
 # Insert the source into the rownames of the point coordinates
@@ -681,6 +851,4 @@ Tukey.dist= TukeyHSD (aov(value ~ groups, data = GroupedDist))
 # for a fungus to go into a leaf than into a branch
 boxplot(GroupedDist$value ~GroupedDist$groups)
 
-### Why this plot is different from NMDS?
-### Because the NMDS plot likely has overdispersion effects.
 
