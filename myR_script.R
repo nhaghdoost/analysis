@@ -253,7 +253,6 @@ simpson.effect = effect("source:dust", simpson.m, multiline=TRUE)
 dev.off()
 par(mfrow=c(1,3))
 
-##isolation success
 #Leaf
 plot(c(0.01,0.06), c(0.3,1.3), type = "n", xlab="Dust deposition (mg/cm2)",
      main = "Leaf", ylab = "",cex.axis = 1.5,
@@ -683,11 +682,11 @@ row.names(MyAbund)[MyAbund[ ,"Ustilago_A16"] >0]
 ###
 MyAbund$Alternaria_sp_A9
 
-###source*dust interactions plot
+### source*dust interactions plot
 ### Negative binomial glm for the species affected by the source* dust interaction
 
 Microsphaeriopsis.model= glm.nb(MyAbund$Microsphaeriopsis_olivacea ~ locality +
-                                  time + source*dus,data= MetaData)
+                                  time + source*dust,data= MetaData)
 Micros.anova = anova (Microsphaeriopsis.model, test = "Chisq")                             
 Micros.summary= summary(Microsphaeriopsis.model)
 # ploting the effect
@@ -774,6 +773,81 @@ plot(effect("source:dust", model.list[["Schizothecium_sp_B14"]]), xlab = "Dust D
 plot(effect("source:dust", model.list[["Scytalidium_thermophilum"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Scytalidium_thermophilum abundance",main= NULL)
 plot(effect("source:dust", model.list[["Seimatosporium_pezizoides"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Seimatosporium_pezizoides abundance",main= NULL)
 dev.off()
+#### ploting all the OTUs that shows a reaction to the interaction
+
+Microsphaeriopsis.model= glm.nb(MyAbund$Microsphaeriopsis_olivacea ~ locality +
+                                  time + source*dust,data= MetaData)
+Alternaria_sp_A25.model= glm.nb(MyAbund$Alternaria_sp_A25 ~ locality +
+                                  time + source*dust,data= MetaData)
+Alternaria_sp_A9.model= glm.nb(MyAbund$Alternaria_sp_A9 ~ locality +
+                                  time + source*dust,data= MetaData)
+Aureobasidium_sp_A30.model= glm.nb(MyAbund$Aureobasidium_sp_A30 ~ locality +
+                                  time + source*dust,data= MetaData)
+Byssochlamys_spectabilis_.model= glm.nb(MyAbund$Byssochlamys_spectabilis_ ~ locality +
+                                  time + source*dust,data= MetaData)
+Cladosporium_herbarum_A8.model= glm.nb(MyAbund$Cladosporium_herbarum_A8 ~ locality +
+                                  time + source*dust,data= MetaData)
+Penicillium_sp_A21.model= glm.nb(MyAbund$Penicillium_sp_A21 ~ locality +
+                                  time + source*dust,data= MetaData)
+Pleosporaceae_sp_A5.model= glm.nb(MyAbund$Pleosporaceae_sp_A5 ~ locality +
+                                  time + source*dust,data= MetaData)
+
+Micros.effec= effect("source:dust", Microsphaeriopsis.model)
+Alternaria_sp_A25.model.effec= effect("source:dust",Alternaria_sp_A25.model)
+Alternaria_sp_A9.model.effec= effect("source:dust", Alternaria_sp_A9.model)
+Aureobasidium_sp_A30.model.effec= effect("source:dust", Aureobasidium_sp_A30.model)
+Byssochlamys.effec= effect("source:dust", Byssochlamys_spectabilis_.model)
+Cladosporium_herbarum_A8.model.effec= effect("source:dust", Cladosporium_herbarum_A8.model)
+Penicillium_sp_A21.model.effec= effect("source:dust", Penicillium_sp_A21.model)
+Pleosporaceae_sp_A5.model.effec= effect("source:dust", Pleosporaceae_sp_A5.model)
+
+### The reaction plot
+dev.off()
+par(mfrow=c(1,3))
+
+#Leaf
+plot(c(0.01,0.06), c(2.205382e-06,0.01811648), type = "n", xlab="Dust deposition (mg/cm2)",
+     main = "Leaf", ylab = "",cex.axis = 1.5,
+     cex.lab = 1.5, cex.main= 1.5)
+
+points(c(0.01,0.06), c(6.780386e-05,2.220446e-16), type = "l", col="red")#Microsphaeriopsis
+points(c(0.01,0.06), c(0.00119931,7.373837e-14), type = "l", col="black")#A25
+points(c(0.01,0.06), c(0.006563875,1.436627e-07), type = "l", col="black")#A9
+points(c(0.01,0.06), c(2.205382e-06,2.220446e-16), type = "l", col= "black")#A30
+points(c(0.01,0.06), c(0.004881679,0.001257212), type = "l", col="black")#Byssochlamys
+points(c(0.01,0.06), c(0.002904384,0.01811648), type = "l", col="black")#A8
+points(c(0.01,0.06), c(0.002465486,2.867857e-13), type = "l", col= "black")#A21
+points(c(0.01,0.06), c(0.0009805355,5.550239e-09), type = "l", col= "black")#A5
+
+#Branch
+plot(c(0.01,0.06), c(0,0.02415204), type = "n", xlab="Dust deposition (mg/cm2)",
+     main = "Branch", ylab = "",cex.axis = 1.5,
+     cex.lab = 1.5,cex.main= 1.5)
+points(c(0.01,0.06), c(3.820536e-01,5.700578e-02), type = "l", col="red")#Microsphaeriopsis
+points(c(0.01,0.06), c(0.03120315,1.575250e-05), type = "l", col="black")#25
+points(c(0.01,0.06), c(0.039682698,5.224453e-04), type = "l", col="black")#A9
+points(c(0.01,0.06), c(3.372862e-03,3.891702e-01), type = "l", col= "black")#A30
+points(c(0.01,0.06), c(0.311248787,0.273451531), type = "l", col="black")#Byssochlamys
+points(c(0.01,0.06), c(0.032479263,0.02415204), type = "l", col="black")#A8
+points(c(0.01,0.06), c(0.010226362,3.445531e-08), type = "l", col= "black")
+points(c(0.01,0.06), c(0.0144565757,7.301888e-04), type = "l", col= "black")
+#Dust
+plot(c(0.01,0.06), c(0,9.479314e-02), type = "n", xlab="Dust deposition (mg/cm2)",  
+     main = "Deposited dust", ylab = "",cex.axis = 1.5,
+     cex.lab = 1.5,cex.main= 1.5)
+points(c(0.01,0.06), c(1.733849e-01,3.520947e-01), type = "l", col="red")#Microsphaeriopsis
+points(c(0.01,0.06), c(0.05675319,4.689172e-02), type = "l", col="black")#A25
+points(c(0.01,0.06), c(0.154575206,9.479314e-02), type = "l", col="black")#A9
+points(c(0.01,0.06), c(1.537366e-01,1.470763e-01), type = "l", col= "black")#A30
+points(c(0.01,0.06), c(0.052085705,0.102723379), type = "l", col="black")#Byssochlamys
+points(c(0.01,0.06), c(0.277383476,0.15360726), type = "l", col="black")#A8
+points(c(0.01,0.06), c(0.009849907,4.371290e-05), type = "l", col= "black")
+points(c(0.01,0.06), c(0.0238803385,8.354105e-01), type = "l", col= "black")
+#Dust
+legend("topleft",legend = c("Isolation success","Richness","Shannon diversity",
+                            "Simpson diversity"),
+       fill = c("black","red","blue","green"),  border="white", bty="n", cex = 1.5)
+
 
 
 #### Model-based ordination
