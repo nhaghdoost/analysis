@@ -10,7 +10,6 @@ library(rjags)
 library(boral)
 #library(mgcv)
 library(effects)
-library(visreg)
 library(MASS)
 library(reshape)
   ##################################
@@ -177,12 +176,12 @@ MetaNotOne = MetaRich[RichNotOne,]
 # Calculate diversity indices
 shannon = diversity(AbundNotOne,index = "shannon")
 simpson = diversity(AbundNotOne,index = "simpson")
-par(mfrow = c(2,2))
+
 hist(shannon)
 hist(simpson)
 hist(log(shannon))
 hist(log(simpson))
-
+dev.off()
 ## Fishers alpha log-series
 # Check what Fisher's alpha means. 
 # You get very high values with only a few species observations.
@@ -248,31 +247,31 @@ par(mfrow=c(1,3))
 plot(c(0.01,0.06), c(0.3,1.3), type = "n", xlab="Dust deposition (mg/cm2)",
      main = "Leaf", ylab = "",cex.axis = 1.5,
      cex.lab = 1.5, cex.main= 1.5)
-points(c(0.01,0.06), c(0.3756226,0.2955457), type = "l", col= "black")#isolation success
-points(c(0.01,0.06), c(1.245071,0.7484556), type = "l", col="red")#Richness
-points(c(0.01,0.05), c(0.7573420,0.4898882), type = "l", col="blue")#Shannon
-points(c(0.01,0.05), c(0.5374573,0.5828385), type = "l", col="green")#Simpson
+points(c(0.01,0.06), c(0.3756226,0.2955457), type = "l",lwd=2, col= "black")#isolation success
+points(c(0.01,0.06), c(1.245071,0.7484556), type = "l",lwd=2, col="red")#Richness
+points(c(0.01,0.05), c(0.7573420,0.4898882), type = "l",lwd=2, col="blue")#Shannon
+points(c(0.01,0.05), c(0.5374573,0.5828385), type = "l",lwd=2, col="green")#Simpson
 
 #Branch
 plot(c(0.01,0.06), c(0.5,2.1), type = "n", xlab="Dust deposition (mg/cm2)",
      main = "Branch", ylab = "",cex.axis = 1.5,
      cex.lab = 1.5,cex.main= 1.5)
-points(c(0.01,0.06), c(2.0987844,0.8687591), type = "l", col= "black")#isolation success
-points(c(0.01,0.06), c(2.015726,1.3100015), type = "l", col="red")#Richness
-points(c(0.01,0.05), c(0.8670190,0.6722335), type = "l", col="blue")#Shannon
-points(c(0.01,0.05), c(0.5550835,0.4743116), type = "l", col="green")#Simpson
+points(c(0.01,0.06), c(2.0987844,0.8687591), type = "l",lwd=2, col= "black")#isolation success
+points(c(0.01,0.06), c(2.015726,1.3100015), type = "l",lwd=2, col="red")#Richness
+points(c(0.01,0.05), c(0.8670190,0.6722335), type = "l",lwd=2, col="blue")#Shannon
+points(c(0.01,0.05), c(0.5550835,0.4743116), type = "l",lwd=2, col="green")#Simpson
 
 #Dust
 plot(c(0.01,0.06), c(0.5,3.2), type = "n", xlab="Dust deposition (mg/cm2)",  
      main = "Deposited dust", ylab = "",cex.axis = 1.5,
      cex.lab = 1.5,cex.main= 1.5)
-points(c(0.01,0.06), c(2.1772373,2.5623075), type = "l", col= "black")#isolation success
-points(c(0.01,0.06), c(2.144628,3.1278729), type = "l", col="red")#Richness
-points(c(0.01,0.05), c(0.9417183,1.1881632), type = "l", col="blue")#Shannon
-points(c(0.01,0.05), c(0.5854507,0.6784688), type = "l", col="green")#Simpson
+points(c(0.01,0.06), c(2.1772373,2.5623075), type = "l",lwd=2, col= "black")#isolation success
+points(c(0.01,0.06), c(2.144628,3.1278729), type = "l",lwd=2, col="red")#Richness
+points(c(0.01,0.05), c(0.9417183,1.1881632), type = "l",lwd=2, col="blue")#Shannon
+points(c(0.01,0.05), c(0.5854507,0.6784688), type = "l",lwd=2, col="green")#Simpson
 legend("topleft",legend = c("Isolation success","Richness","Shannon diversity",
-                             "Simpson diversity"),
-       fill = c("black","red","blue","green"),  border="white", bty="n", cex = 1.5)
+                             "Simpson diversity"),lwd=2,
+      col= c("black","red","blue","green"),  border="white", bty="n", cex = 1.5)
 
 
 # ## check to see if we have the same patterns in each locality and each time
@@ -817,7 +816,7 @@ ordibora= ordiplot(ModelOrd$lv.median, choices = c(1,2),display = "sites",
 points(ordibora,"sites", pch=20 ,col=as.numeric(MetaOrd$source))
 #ordispider(ordibora,MetaOrd$source, col= "gray" )
 mylegend = legend(0.7, 0.9, c("Leaf","Branch","Dust"), 
-                  fill=c("black", "red", "green"), border="white", bty="n", cex = 1.3)
+                  c("black", "red", "green"), border="white", bty="n", cex = 1.3)
 with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
                           draw="polygon", col="black",
                           alpha=200,kind="se",conf=0.95, 
