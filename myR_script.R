@@ -161,7 +161,8 @@ shannon.effect = effect("source:dust", shannon.m, multiline=TRUE)
 simpson.effect = effect("source:dust", simpson.m, multiline=TRUE)
 ### The plot
 dev.off()
-par(mfrow=c(1,3))
+pdf(file = "final diversity interaction plot.pdf", paper = "a4", width = 7, height = 4)
+par(mfrow=c(1,3),xpd=TRUE, oma= c(0,0,2,0))
 
 #Leaf
 plot(c(0.01,0.06), c(0.3,1.3), type = "n", xlab="Dust deposition (mg/cm2)",
@@ -182,6 +183,7 @@ points(c(0.01,0.05), c(0.8670190,0.6722335), type = "l",lwd=2, col="blue")#Shann
 points(c(0.01,0.05), c(0.5550835,0.4743116), type = "l",lwd=2, col="green")#Simpson
 
 #Dust
+
 plot(c(0.01,0.06), c(0.5,3.2), type = "n", xlab="Dust deposition (mg/cm2)",  
      main = "Deposited dust", ylab = "",cex.axis = 1.5,
      cex.lab = 1.5,cex.main= 1.5)
@@ -189,10 +191,15 @@ points(c(0.01,0.06), c(2.1772373,2.5623075), type = "l",lwd=2, col= "black")#iso
 points(c(0.01,0.06), c(2.144628,3.1278729), type = "l",lwd=2, col="red")#Richness
 points(c(0.01,0.05), c(0.9417183,1.1881632), type = "l",lwd=2, col="blue")#Shannon
 points(c(0.01,0.05), c(0.5854507,0.6784688), type = "l",lwd=2, col="green")#Simpson
-legend("topleft",legend = c("Isolation success","Richness","Shannon diversity",
-                             "Simpson diversity"),lwd=2,
-      col= c("black","red","blue","green"),  border="white", bty="n", cex = 1.5)
-
+reset <- function() {
+  par(mfrow=c(1, 1), oma=rep(0, 4), mar=rep(0, 4), new=TRUE)
+  plot(0:1, 0:1, type="n", xlab="", ylab="", axes=FALSE)
+}
+reset()
+legend("top",legend = c("Isolation success","Richness","Shannon diversity",
+                        "Simpson diversity"),lwd=2, horiz=TRUE,
+       col= c("black","red","blue","green"),  border="white", bty="n", cex =0.8)
+dev.off()
 #######################################################
 #######################################################
 ### 3- Community composition model
@@ -247,15 +254,20 @@ Micros.summary= summary(Microsphaeriopsis.model)
 # ploting the effect
 Micros.effec= effect("source:dust", Microsphaeriopsis.model, multiline = FALSE)
 Micros.effec.sum = summary (Micros.effec)
-Mic.eff<-plot(Micros.effec, ylab = "Microsphaeropsis olivacea abundance",
-              xlab = "Dust Deposition (mg/cm2)",main= NULL, ylim = c(-30,5),
-              se=FALSE,ci.style="none")
-Mic.eff # plot original object
-Mic.eff$x.scales$cex <- c(1.3, 1.3)
-Mic.eff$xlab$cex <- 1.3
-Mic.eff$ylab$cex <- 1.3
-Mic.eff # plot edited object
 
+Mic.eff<-plot(Micros.effec, ylab = "M. olivacea abundance",
+              xlab = "Dust Deposition (mg/cm2)",main= NULL, ylim = c(-30,5),
+             se=FALSE,ci.style="none")
+dev.off()
+pdf(file = "M.oliv interaction plot.pdf", paper = "a4", width = 7, height = 4)
+
+Mic.eff # plot original object
+ 
+Mic.eff$x.scales$cex <- c(1.1, 1.1)
+Mic.eff$xlab$cex <- 1.1
+Mic.eff$ylab$cex <- 1.1
+Mic.eff # plot edited object
+dev.off()
 #### visualize how other OTUs are affected by the Source*Dust interaction
 model.list = list()
 for( i in names(MyAbund)){
@@ -354,8 +366,8 @@ Penicillium_sp_A21.model.effec= effect("source:dust", Penicillium_sp_A21.model)
 Pleosporaceae_sp_A5.model.effec= effect("source:dust", Pleosporaceae_sp_A5.model)
 ### The reaction plot
 dev.off()
-
-par(mfrow=c(1,3))
+pdf(file = "OTUs interaction plot.pdf", paper = "a4", width = 7, height = 4)
+par(mfrow=c(1,3),xpd=TRUE, oma= c(0,0,2,0))
 #Leaf
 plot(c(0.01,0.06), c(0.0,2.220446e-2), type = "n", xlab="Dust deposition (mg/cm2)",
      main = "Leaf", ylab = "",cex.axis = 1.5,
@@ -366,18 +378,18 @@ points(c(0.01,0.06), c(2.205382e-06,2.220446e-16), type = "l",lty=3, lwd=2, col=
 points(c(0.01,0.06), c(0.004881679,0.001257212), type = "l",lty=1,lwd=2, col= "green")#Byssochlamys
 points(c(0.01,0.06), c(0.002904384,0.01811648), type = "l",lwd=2,lty=6, col="red")#A8
 points(c(0.01,0.06), c(0.002465486,2.867857e-13), type = "l",lwd=2,lty=4, col= "blue")#A21
-points(c(0.01,0.06), c(0.0009805355,5.550239e-09), type = "l",lwd=2,lty=3, col= "green")#A5
+points(c(0.01,0.06), c(0.0009805355,5.550239e-09), type = "l",lwd=2,lty=3, col= "black")#A5
 #Branch
 plot(c(0.01,0.06), c(0.0,4.224453e-2), type = "n", xlab="Dust deposition (mg/cm2)",
      main = "Branch", ylab = "",cex.axis = 1.5,
      cex.lab = 1.5,cex.main= 1.5)
 points(c(0.01,0.06), c(0.03120315,1.575250e-05), type = "l",lty=6, lwd=2, col="black")#25
 points(c(0.01,0.06), c(0.039682698,5.224453e-04), type = "l",lty=5, lwd=2, col="blue")#A9
-points(c(0.01,0.06), c(3.372862e-03,3.891702e-01), type = "l",lty=3, lwd=2, col= "red")#A30
-points(c(0.01,0.06), c(0.311248787,0.273451531), type = "l",lty=1,lwd=2, col= "green")#Byssochlamys this is not shown
+points(c(0.01,0.06), c(3.372862e-03,3.891702e-02), type = "l",lty=3, lwd=2, col= "red")#A30
+points(c(0.01,0.06), c(0.0311248787,0.0273451531), type = "l",lty=1,lwd=2, col= "green")#Byssochlamys 
 points(c(0.01,0.06), c(0.032479263,0.02415204), type = "l",lwd=2,lty=6, col="red")#A8
 points(c(0.01,0.06), c(0.010226362,3.445531e-08), type = "l",lwd=2,lty=4, col= "blue")#A21
-points(c(0.01,0.06), c(0.0144565757,7.301888e-04), type = "l",lwd=2,lty=3, col= "green")#A5
+points(c(0.01,0.06), c(0.0144565757,7.301888e-04), type = "l",lwd=2,lty=3, col= "black")#A5
 #Dust
 plot(c(0.01,0.06), c(0.00,10e-1), type = "n", xlab="Dust deposition (mg/cm2)",
      main = "Deposited dust", ylab = "",cex.axis = 1.5,
@@ -388,11 +400,16 @@ points(c(0.01,0.06), c(1.537366e-01,1.470763e-01), type = "l",lty=3, lwd=2, col=
 points(c(0.01,0.06), c(0.052085705,0.102723379), type = "l",lty=1, lwd=2, col= "green")#Byssochlamys
 points(c(0.01,0.06), c(0.277383476,0.15360726), type = "l",lwd=2,lty=6, col="red")#A8
 points(c(0.01,0.06), c(0.009849907,4.371290e-05), type = "l", lwd=2,lty=4, col= "blue")#A21
-points(c(0.01,0.06), c(0.0238803385,8.354105e-01), type = "l",lwd=2,lty=3, col= "green")#A5
-
+points(c(0.01,0.06), c(0.0238803385,8.354105e-01), type = "l",lwd=2,lty=3, col= "black")#A5
+reset <- function() {
+  par(mfrow=c(1, 1), oma=rep(0, 4), mar=rep(0, 4), new=TRUE)
+  plot(0:1, 0:1, type="n", xlab="", ylab="", axes=FALSE)
+}
+reset()
 legend(0.04, 1.03, c("A25", "A9", "A30","Bys","A8","A21","A5"), col = c("black", "blue", 
-                 "red","green","red","blue","green"),box.col="white",
-       lty = c(6,5,3,1,6,4,3), cex = 1.5)
+                 "red","green","red","blue","black"),box.col="white",horiz=TRUE,
+       lwd=2,lty = c(6,5,3,1,6,4,3), cex = 1)
+dev.off()
 #############################
 #############################
 ## 4- Similarity analysis
@@ -411,25 +428,27 @@ plot(ModelOrd, ask = FALSE )
 # Ordination plot.
 dev.off()
 par(mar=c(4,4,1,1))
+pdf(file = "LVM.pdf", paper = "a4", width = 6.5, height = 6.5)
 ordibora= ordiplot(ModelOrd$lv.median, choices = c(1,2),display = "sites",
-                   type = "none", cex = 1.5 , xlim = c(-0.3,0.3), cex.axis = 1.5,
+                   type = "none", cex = 1 , xlim = c(-0.3,0.3), cex.axis = 1,
          cex.lab = 1.2)
 points(ordibora,"sites", pch=20 ,col=as.numeric(MetaOrd$source))
 #ordispider(ordibora,MetaOrd$source, col= "gray" )
-mylegend = legend(0.7, 0.9, c("Leaf","Branch","Dust"), 
-                  c("black", "red", "green"), border="white", bty="n", cex = 1.3)
-with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
+mylegend = legend("topright",legend=c("Leaf","Branch","Dust"), 
+                 fill =  c("black", "red", "green"), border="white", bty="n", cex = 1)
+with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=0.5, 
                           draw="polygon", col="black",
                           alpha=200,kind="se",conf=0.95, 
                           show.groups=(c("Leaf"))))
-with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
+with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=0.5, 
                           draw="polygon", col="red",
-                          alpha=150,kind="se",conf=0.95,
+                          alpha=200,kind="se",conf=0.95,
                           show.groups=(c("Branch")))) 
-with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=.5, 
+with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=0.5, 
                           draw="polygon", col="green",
                           alpha=200,kind="se",conf=0.95,
                           show.groups=(c("Dust"))))
+dev.off()
 # ordisurf of dust: show dust + source interaction on the whole community
 #ordisurf(ModelOrd$lv.median, MetaOrd$dust, add=T, col = "blue", labcex= 1.3)
 # Insert the source into the rownames of the point coordinates
