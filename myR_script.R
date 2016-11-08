@@ -1,5 +1,10 @@
-## Effects of dust deposition on endophytic fungal diversity and community composition of Persian Oak##
-## Niloufar Hagh Doust, Moslem Akbarinia, Naser Safaie, Hamed Yousefzadeh, Miklós Bálint
+####################################
+####################################
+## Community analysis of Persian oak fungal endophytes 
+## under dust storm conditions shows context dependency##
+## BY: N. Hagh Doust, M. Akbarinia, N. Safaie, H. Yousefzadeh and M. Bálint
+###################################
+###################################
 
 ## Pakages we need for the analysis
 library(mvabund)
@@ -12,17 +17,19 @@ library(MASS)
 library(reshape)
 ##################################
 ##################################
+
 ##### 1- Isolation success analysis:
 ## Isolation success data input
 
 # Get the input data from here first:
+# https://figshare.com/s/0f4283512f39cc4f3c0e
 # https://figshare.com/s/fbf753647e6e86467707
 
 MyAbund = read.csv(file="morphotype_matrix_incubator.csv", 
                    header = T, row.names = 1)
 MetaData = read.csv(file="metadata.csv", header = T, row.names = 1)
 
-##### 1- Isolation success
+##### 1- Isolation success calculation
 IsolSucc = apply(MyAbund,1, sum)
 
 # Combine with the rest of the metadata
@@ -44,7 +51,7 @@ MetaData$locality <- factor(MetaData$locality)
 success.m = glm (success ~ locality + time + source * dust, data=MetaData, 
                family = poisson(link = "log"))
 
-### Culturing success model results
+### Isolation success model results
 success.sammary = summary(success.m)
 success.anova = anova(success.m, test="LRT")
 
@@ -62,7 +69,7 @@ boxplot(fitted(success.m) ~ MetaData$locality,
 boxplot(fitted(success.m) ~ MetaData$source,
         ylab="Source of isolation")
 
-## plot the interaction
+## Creating the interaction object for ploting
 success.effect = effect("source:dust",success.m , multiline=TRUE)
 
 # Effect summaries
@@ -115,7 +122,7 @@ par(mfrow=c(1,1))
 boxplot(fitted(Richness.m) ~ MetaRich$source, xlab="Source", ylab="Richness")
 # Richness in branch and dust similar, but richness stat. sign. lower in leaf
 
-# Interaction plots:
+# Creating the interaction object for ploting
 Richness.effect = effect("source:dust",Richness.m, multiline=TRUE, confidence.level = 0.95)
 
 ### Shannon and Simpson models.
@@ -143,7 +150,7 @@ shannon.m = lm (shannon ~ locality + time + source*dust, data = MetaNotOne)
 shannon.summary = summary (shannon.m) 
 shannon.anova = anova (shannon.m, test = "LRT")
 
-# Interaction plots:
+# Creating the interaction object for ploting
 shannon.effect = effect("source:dust", shannon.m, multiline=TRUE)
 shan.eff.sum = summary (shannon.effect)
 
@@ -151,19 +158,21 @@ shan.eff.sum = summary (shannon.effect)
 simpson.m = lm (simpson ~ locality + time + source*dust, data=MetaNotOne)
 simpson.summary = summary (simpson.m)
 simpson.anova = anova (simpson.m, test= "Chisq")
-# Interaction plots:
+
+## Creating the interaction object for ploting
 simpson.effect = effect("source:dust", simpson.m, multiline=TRUE)
 
-### MERG ALL INTERACTION PLOTS 
+### PLOT all interaction objects together
 success.effect = effect("source:dust",success.m , multiline=TRUE)
 Richness.effect = effect("source:dust",Richness.m, multiline=TRUE, confidence.level = 0.95)
 shannon.effect = effect("source:dust", shannon.m, multiline=TRUE)
 simpson.effect = effect("source:dust", simpson.m, multiline=TRUE)
+
+### USE the results from effect objects in the plots
 ### The plot
 dev.off()
 pdf(file = "final diversity interaction plot.pdf", paper = "a4", width = 7, height = 4)
 par(mfrow=c(1,3),xpd=TRUE, oma= c(0,0,2,0))
-
 #Leaf
 plot(c(0.01,0.06), c(0.3,1.3), type = "n", xlab="Dust deposition (mg/cm2)",
      main = "Leaf", ylab = "",cex.axis = 1.5,
@@ -172,7 +181,6 @@ points(c(0.01,0.06), c(0.3756226,0.2955457), type = "l",lwd=2, col= "black")#iso
 points(c(0.01,0.06), c(1.245071,0.7484556), type = "l",lwd=2, col="red")#Richness
 points(c(0.01,0.05), c(0.7573420,0.4898882), type = "l",lwd=2, col="blue")#Shannon
 points(c(0.01,0.05), c(0.5374573,0.5828385), type = "l",lwd=2, col="green")#Simpson
-
 #Branch
 plot(c(0.01,0.06), c(0.5,2.1), type = "n", xlab="Dust deposition (mg/cm2)",
      main = "Branch", ylab = "",cex.axis = 1.5,
@@ -181,9 +189,7 @@ points(c(0.01,0.06), c(2.0987844,0.8687591), type = "l",lwd=2, col= "black")#iso
 points(c(0.01,0.06), c(2.015726,1.3100015), type = "l",lwd=2, col="red")#Richness
 points(c(0.01,0.05), c(0.8670190,0.6722335), type = "l",lwd=2, col="blue")#Shannon
 points(c(0.01,0.05), c(0.5550835,0.4743116), type = "l",lwd=2, col="green")#Simpson
-
 #Dust
-
 plot(c(0.01,0.06), c(0.5,3.2), type = "n", xlab="Dust deposition (mg/cm2)",  
      main = "Deposited dust", ylab = "",cex.axis = 1.5,
      cex.lab = 1.5,cex.main= 1.5)
@@ -200,9 +206,11 @@ legend("top",legend = c("Isolation success","Richness","Shannon diversity",
                         "Simpson diversity"),lwd=2, horiz=TRUE,
        col= c("black","red","blue","green"),  border="white", bty="n", cex =0.8)
 dev.off()
+
 #######################################################
 #######################################################
-### 3- Community composition model
+### 3- Community Composition Analysis
+
 fun.Mvabund = mvabund(MyAbund)
 plot(fun.Mvabund)
 
@@ -211,6 +219,7 @@ fun.Mvabund.m = manyglm (fun.Mvabund ~ locality + time + source*dust, data= Meta
 plot.manyglm(fun.Mvabund.m)
 fun.Mvabund.m.sum = summary.manyglm (fun.Mvabund.m, nBoot=100, test="LR",p.uni="adjusted", 
                                   resamp="montecarlo")
+
 ## Analysis of variance explained by the predictors
 fun.Mvabund.m.anova = anova.manyglm (fun.Mvabund.m, nBoot=300, test="LR", p.uni="adjusted", 
                                 resamp="montecarlo")
@@ -245,13 +254,15 @@ row.names(MyAbund)[MyAbund[ ,"Quambalaria_cyanescens"] >0]
 row.names(MyAbund)[MyAbund[ ,"Ustilago_A14"] >0]
 row.names(MyAbund)[MyAbund[ ,"Ustilago_A15"] >0]
 row.names(MyAbund)[MyAbund[ ,"Ustilago_A16"] >0]
-### source*dust interactions plot
+
+### source*dust interactions 
 ### Negative binomial glm for the species affected by the source* dust interaction
 Microsphaeriopsis.model= glm.nb(MyAbund$Microsphaeriopsis_olivacea ~ locality +
                                   time + source*dust,data= MetaData)
 Micros.anova = anova (Microsphaeriopsis.model, test = "Chisq")                             
 Micros.summary= summary(Microsphaeriopsis.model)
-# ploting the effect
+
+# ploting the interaction effect
 Micros.effec= effect("source:dust", Microsphaeriopsis.model, multiline = FALSE)
 Micros.effec.sum = summary (Micros.effec)
 
@@ -268,6 +279,7 @@ Mic.eff$xlab$cex <- 1.1
 Mic.eff$ylab$cex <- 1.1
 Mic.eff # plot edited object
 dev.off()
+
 #### visualize how other OTUs are affected by the Source*Dust interaction
 model.list = list()
 for( i in names(MyAbund)){
@@ -340,6 +352,7 @@ plot(effect("source:dust", model.list[["Schizothecium_sp_B14"]]), xlab = "Dust D
 plot(effect("source:dust", model.list[["Scytalidium_thermophilum"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Scytalidium_thermophilum abundance",main= NULL)
 plot(effect("source:dust", model.list[["Seimatosporium_pezizoides"]]), xlab = "Dust Deposition (mg/cm2)", ylab = "Seimatosporium_pezizoides abundance",main= NULL)
 dev.off()
+
 #### ploting all the OTUs that shows a reaction to the interaction
 ### creating a negative binomial GLM model for each OTU
 Alternaria_sp_A25.model= glm.nb(MyAbund$Alternaria_sp_A25 ~ locality +
@@ -356,7 +369,7 @@ Penicillium_sp_A21.model= glm.nb(MyAbund$Penicillium_sp_A21 ~ locality +
                           time + source*dust,data= MetaData)
 Pleosporaceae_sp_A5.model= glm.nb(MyAbund$Pleosporaceae_sp_A5 ~ locality +
                             time + source*dust,data= MetaData)
-## effect objects
+## interaction effect objects
 Alternaria_sp_A25.model.effec= effect("source:dust",Alternaria_sp_A25.model)
 Alternaria_sp_A9.model.effec= effect("source:dust", Alternaria_sp_A9.model)
 Aureobasidium_sp_A30.model.effec= effect("source:dust", Aureobasidium_sp_A30.model)
@@ -364,6 +377,7 @@ Byssochlamys.effec= effect("source:dust", Byssochlamys_spectabilis_.model)
 Cladosporium_herbarum_A8.model.effec= effect("source:dust", Cladosporium_herbarum_A8.model)
 Penicillium_sp_A21.model.effec= effect("source:dust", Penicillium_sp_A21.model)
 Pleosporaceae_sp_A5.model.effec= effect("source:dust", Pleosporaceae_sp_A5.model)
+
 ### The reaction plot
 dev.off()
 pdf(file = "OTUs interaction plot.pdf", paper = "a4", width = 7, height = 4)
@@ -410,9 +424,11 @@ legend(0.04, 1.03, c("A25", "A9", "A30","Bys","A8","A21","A5"), col = c("black",
                  "red","green","red","blue","black"),box.col="white",horiz=TRUE,
        lwd=2,lty = c(6,5,3,1,6,4,3), cex = 1)
 dev.off()
+
 #############################
 #############################
 ## 4- Similarity analysis
+
 #### Model-based ordination
 # Remove species present in only one sample
 CountInSample = apply(AbundNotZero,2,sum)
@@ -451,9 +467,11 @@ with(MetaOrd,ordiellipse(ordibora, MetaOrd$source,cex=0.5,
 dev.off()
 # ordisurf of dust: show dust + source interaction on the whole community
 #ordisurf(ModelOrd$lv.median, MetaOrd$dust, add=T, col = "blue", labcex= 1.3)
+
 # Insert the source into the rownames of the point coordinates
 ModelToDist = ModelOrd$lv.median
 rownames(ModelToDist) = paste(MetaOrd$source, rownames(ModelToDist), sep = ".")
+
 # Calculate the distance among the sites
 ModelDist = dist(ModelToDist, method = "euclidean")
 
@@ -475,8 +493,7 @@ GroupedDist = data.frame(GroupedDist,
 # Post-hoc testing of group distances
 Tukey.dist= TukeyHSD (aov(value ~ groups, data = GroupedDist))
 
-# It makes sense if you did a good surface sterilization: probably it is easier 
-# for a fungus to go into a leaf than into a branch
+# It makes sense: probably it is easier for a fungus to go into a leaf than into a branch
 boxplot(GroupedDist$value ~GroupedDist$groups)
 
 
