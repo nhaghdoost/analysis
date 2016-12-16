@@ -1,8 +1,8 @@
 ####################################
 ####################################
-## Community analysis of Persian oak fungal endophytes 
-## under dust storm conditions shows context dependency##
-## BY: N. Hagh Doust, M. Akbarinia, N. Safaie, H. Yousefzadeh and M. Bálint
+## Cultivation-based community analysis of Persian oak fungal microbiome 
+## under dust storm conditions shows context dependency
+
 ###################################
 ###################################
 
@@ -15,6 +15,7 @@ library(boral)
 library(effects)
 library(MASS)
 library(reshape)
+library(jpeg)
 ##################################
 ##################################
 
@@ -162,16 +163,16 @@ simpson.anova = anova (simpson.m, test= "Chisq")
 ## Creating the interaction object for ploting
 simpson.effect = effect("source:dust", simpson.m, multiline=TRUE)
 
+### Fig 2
 ### PLOT all interaction objects together
+### creat effect objects for ploting the results
 success.effect = effect("source:dust",success.m , multiline=TRUE)
 Richness.effect = effect("source:dust",Richness.m, multiline=TRUE, confidence.level = 0.95)
 shannon.effect = effect("source:dust", shannon.m, multiline=TRUE)
 simpson.effect = effect("source:dust", simpson.m, multiline=TRUE)
-
 ### USE the results from effect objects in the plots
-### The plot
 dev.off()
-pdf(file = "final diversity interaction plot.pdf", paper = "a4", width = 7, height = 4)
+pdf(file = "Fig2.pdf", paper = "a4", width = 7, height = 4)
 par(mfrow=c(1,3),xpd=TRUE, oma= c(0,0,2,0))
 #Leaf
 plot(c(0.01,0.06), c(0.3,1.3), type = "n", xlab="Dust deposition (mg/cm2)",
@@ -261,7 +262,7 @@ Microsphaeriopsis.model= glm.nb(MyAbund$Microsphaeriopsis_olivacea ~ locality +
                                   time + source*dust,data= MetaData)
 Micros.anova = anova (Microsphaeriopsis.model, test = "Chisq")                             
 Micros.summary= summary(Microsphaeriopsis.model)
-
+# Fig 3
 # ploting the interaction effect
 Micros.effec= effect("source:dust", Microsphaeriopsis.model, multiline = FALSE)
 Micros.effec.sum = summary (Micros.effec)
@@ -270,7 +271,7 @@ Mic.eff<-plot(Micros.effec, ylab = "M. olivacea abundance",
               xlab = "Dust Deposition (mg/cm2)",main= NULL, ylim = c(-30,5),
              se=FALSE,ci.style="none")
 dev.off()
-pdf(file = "M.oliv interaction plot.pdf", paper = "a4", width = 7, height = 4)
+pdf(file = "Fig 3.pdf", paper = "a4", width = 7, height = 4)
 
 Mic.eff # plot original object
  
@@ -378,9 +379,9 @@ Cladosporium_herbarum_A8.model.effec= effect("source:dust", Cladosporium_herbaru
 Penicillium_sp_A21.model.effec= effect("source:dust", Penicillium_sp_A21.model)
 Pleosporaceae_sp_A5.model.effec= effect("source:dust", Pleosporaceae_sp_A5.model)
 
-### The reaction plot
+## Fig S1
 dev.off()
-pdf(file = "OTUs interaction plot.pdf", paper = "a4", width = 7, height = 4)
+pdf(file = "Fig S1.pdf", paper = "a4", width = 7, height = 4)
 par(mfrow=c(1,3),xpd=TRUE, oma= c(0,0,2,0))
 #Leaf
 plot(c(0.01,0.06), c(0.0,2.220446e-2), type = "n", xlab="Dust deposition (mg/cm2)",
@@ -442,13 +443,16 @@ ModelOrd <- boral(fung.abun.reduced, family = "negative.binomial", num.lv = 2,
 par(mfrow = c(2,2))
 plot(ModelOrd, ask = FALSE )
 # Ordination plot.
+#Fig 4
 dev.off()
+postscript("Fig4.eps",horizontal= FALSE,paper = "a4", width = 6.5, height = 6.5
+           ,colormodel="rgb-nogray")
 par(mar=c(4,4,1,1))
-pdf(file = "LVM.pdf", paper = "a4", width = 6.5, height = 6.5)
+#pdf(file = "LVM.pdf", paper = "a4", width = 6.5, height = 6.5)
 ordibora= ordiplot(ModelOrd$lv.median, choices = c(1,2),display = "sites",
                    type = "none", cex = 1 , xlim = c(-0.3,0.3), cex.axis = 1,
          cex.lab = 1.2)
-points(ordibora,"sites", pch=20 ,col=as.numeric(MetaOrd$source))
+points(ordibora,"sites", pch=20 ,col="gray", cex= 0.7)
 #ordispider(ordibora,MetaOrd$source, col= "gray" )
 mylegend = legend("topright",legend=c("Leaf","Branch","Dust"), 
                  fill =  c("black", "red", "green"), border="white", bty="n", cex = 1)
@@ -492,8 +496,6 @@ GroupedDist = data.frame(GroupedDist,
 
 # Post-hoc testing of group distances
 Tukey.dist= TukeyHSD (aov(value ~ groups, data = GroupedDist))
-
-# It makes sense: probably it is easier for a fungus to go into a leaf than into a branch
 boxplot(GroupedDist$value ~GroupedDist$groups)
 
 
