@@ -227,6 +227,10 @@ fun.Mvabund.m.anova = anova.manyglm (fun.Mvabund.m, nBoot=300, test="LR", p.uni=
 fun.Mvabund.m.anova100 = anova.manyglm (fun.Mvabund.m, nBoot=100, test="LR", p.uni="adjusted", 
                                      resamp="montecarlo")
 
+# Summary statistics
+fun.Mvabund.m.summary = summary(fun.Mvabund.m, nBoot=100, test="LR",
+                                     resamp="montecarlo")
+
 ## Coefficients
 fun.Mvabund.m.coef = as.data.frame(fun.Mvabund.m$coefficients)
 ## mean-centering the contrasts
